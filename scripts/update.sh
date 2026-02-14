@@ -41,7 +41,7 @@ if [ ! -d ".git" ]; then
 fi
 
 # 检查 submodule 是否存在（.git 可能是文件或目录）
-if [ ! -e ".copilot/skills/.git" ]; then
+if [ ! -e ".copilot/.git" ]; then
   print_error "未找到技能库 submodule"
   echo "请先运行 setup.sh 集成技能库"
   exit 1
@@ -57,7 +57,7 @@ else
 fi
 
 print_step "第2步：更新技能库"
-cd .copilot/skills
+cd .copilot
 
 # 获取当前版本
 CURRENT_VERSION=$(git rev-parse HEAD | cut -c1-8)
@@ -105,11 +105,20 @@ fi
 
 cd ../..
 
-print_step "第3.5步：更新 AGENTS.md（如果存在）"
+print_step "第4步：提交更新"
+git add .copilot
+git commit -m "chore: 更新 copilot-evolution-skills 到 $LATEST_VERSION"
+
+if [ "$STASHED" = true ]; then
+  print_info "恢复之前的工作状态..."
+  git stash pop
+fi
+
+print_step "第4.5步：重建 AGENTS.md（如果存在）"
 
 if [ -f "AGENTS.md" ]; then
   if grep -q "<!-- PROJECT_SKILLS_START -->" AGENTS.md; then
-    print_info "检测到 AGENTS.md，正在更新技能引用..."
+    print_info "检测到 AGENTS.md，正在重建技能引用..."
 
     SKILLS_CONTENT_FILE=$(mktemp)
     printf '%s\n' \
@@ -119,7 +128,7 @@ if [ -f "AGENTS.md" ]; then
       '<project_skills>' \
       > "$SKILLS_CONTENT_FILE"
 
-    for skill_dir in .copilot/skills/skills/_*; do
+    for skill_dir in .copilot/skills/_*; do
       if [ -d "$skill_dir" ]; then
         skill_name=$(basename "$skill_dir")
         skill_file="$skill_dir/SKILL.md"
@@ -130,7 +139,7 @@ if [ -f "AGENTS.md" ]; then
           fi
           [ -z "$description" ] && description="可进化技能"
 
-          printf '<skill>\n<name>%s</name>\n<description>%s</description>\n<file>.copilot/skills/skills/%s/SKILL.md</file>\n</skill>\n\n' \
+          printf '<skill>\n<name>%s</name>\n<description>%s</description>\n<file>.copilot/skills/%s/SKILL.md</file>\n</skill>\n\n' \
             "$skill_name" "$description" "$skill_name" \
             >> "$SKILLS_CONTENT_FILE"
         fi
@@ -143,22 +152,12 @@ if [ -f "AGENTS.md" ]; then
     python -c 'import os,re,pathlib; path=pathlib.Path("AGENTS.md"); data=path.read_text(); start="<!-- PROJECT_SKILLS_START -->"; end="<!-- PROJECT_SKILLS_END -->"; content=pathlib.Path(os.environ["SKILLS_CONTENT_FILE"]).read_text(); pattern=re.compile(re.escape(start)+r".*?"+re.escape(end), re.S); new=start+"\n"+content+"\n"+end; path.write_text(pattern.sub(new, data))'
 
     rm "$SKILLS_CONTENT_FILE"
-    print_success "已更新 AGENTS.md"
+    print_success "已重建 AGENTS.md"
   else
     print_info "AGENTS.md 没有 PROJECT_SKILLS 标记，跳过更新"
   fi
 else
   print_info "未找到 AGENTS.md 文件，跳过更新"
-fi
-
-echo ""
-print_step "第4步：提交更新"
-git add .copilot/skills
-git commit -m "chore: 更新 copilot-evolution-skills 到 $LATEST_VERSION"
-
-if [ "$STASHED" = true ]; then
-  print_info "恢复之前的工作状态..."
-  git stash pop
 fi
 
 print_success "更新完成！"
