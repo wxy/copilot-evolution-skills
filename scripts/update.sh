@@ -122,8 +122,8 @@ if [ -f "AGENTS.md" ]; then
 
     SKILLS_CONTENT_FILE=$(mktemp)
     printf '%s\n' \
-      '<!-- 项目自定义技能现在从远程 GitHub 仓库集成: https://github.com/wxy/copilot-evolution-skills -->' \
-      '<!-- 可进化技能已移至独立项目，通过远程脚本进行管理 -->' \
+      '<!-- 可进化技能从 copilot-evolution-skills 仓库集成: https://github.com/wxy/copilot-evolution-skills -->' \
+      '<!-- 通过 Git Submodule 自动同步，使用 update.sh 可获取最新版本 -->' \
       '' \
       '<project_skills>' \
       > "$SKILLS_CONTENT_FILE"

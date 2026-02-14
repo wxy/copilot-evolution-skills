@@ -71,7 +71,7 @@ fi
 mkdir -p "$(dirname "$SPARSE_CHECKOUT_FILE")"
 
 # 创建稀疏检出配置
-printf "skills/\nai-evolution-constitution.md\nversion.txt\n" > "$SPARSE_CHECKOUT_FILE"
+printf "skills/\nconstitution/\nversion.txt\n" > "$SPARSE_CHECKOUT_FILE"
 
 # 应用稀疏检出
 git read-tree -mu HEAD
@@ -97,7 +97,7 @@ if [ ! -f "$INSTRUCTIONS_FILE" ]; then
     '' \
     '## Part 1: 通用框架 - AI 系统进化宪法' \
     '' \
-    '<attachment filePath=".evolution-skills/ai-evolution-constitution.md">' \
+    '<attachment filePath=".evolution-skills/constitution/ai-evolution-constitution.md">' \
     '此部分包含了 AI 助手的通用进化框架。详见上述文件。该内容与具体项目无关，可独立维护和在多个项目中共享。' \
     '</attachment>' \
     '' \
@@ -121,7 +121,7 @@ else
   if ! grep -q "ai-evolution-constitution.md" "$INSTRUCTIONS_FILE"; then
     print_info "⚠️  建议在 .github/copilot-instructions.md 的 Part 1 中添加进化宪法引用："
     echo ""
-    echo "  <attachment filePath=\".evolution-skills/ai-evolution-constitution.md\">"
+    echo "  <attachment filePath=\".evolution-skills/constitution/ai-evolution-constitution.md\">"
     echo "  此部分包含了 AI 助手的通用进化框架。详见上述文件。"
     echo "  </attachment>"
     echo ""
@@ -137,8 +137,8 @@ if [ -f "AGENTS.md" ]; then
 
     SKILLS_CONTENT_FILE=$(mktemp)
     printf '%s\n' \
-      '<!-- 项目自定义技能现在从远程 GitHub 仓库集成: https://github.com/wxy/copilot-evolution-skills -->' \
-      '<!-- 可进化技能已移至独立项目，通过远程脚本进行管理 -->' \
+      '<!-- 可进化技能从 copilot-evolution-skills 仓库集成: https://github.com/wxy/copilot-evolution-skills -->' \
+      '<!-- 通过 Git Submodule 自动同步，使用 update.sh 可获取最新版本 -->' \
       '' \
       '<project_skills>' \
       > "$SKILLS_CONTENT_FILE"
