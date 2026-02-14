@@ -43,7 +43,9 @@ fi
 
 print_step "第1步：添加 submodule"
 if [ -e ".copilot/skills/.git" ] || grep -q "copilot-evolution-skills" .gitmodules 2>/dev/null; then
-  print_info "检测到已存在的 submodule，跳过添加"
+  print_info "检测到已存在的 submodule，切换为更新流程"
+  bash <(curl -fsSL https://raw.githubusercontent.com/wxy/copilot-evolution-skills/main/scripts/update.sh)
+  exit 0
 else
   git submodule add https://github.com/wxy/copilot-evolution-skills.git .copilot/skills
   print_success "已添加 submodule"
