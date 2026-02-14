@@ -117,15 +117,29 @@ if [ ! -f "$INSTRUCTIONS_FILE" ]; then
 else
   print_info "copilot-instructions.md 已存在，保留原有内容"
   
-  # 检查是否已有进化宪法引用
-  if ! grep -q "ai-evolution-constitution.md" "$INSTRUCTIONS_FILE"; then
+  # 检查并修正宪法引用路径
+  if grep -q "ai-evolution-constitution.md" "$INSTRUCTIONS_FILE"; then
+    # 检查路径是否正确
+    if ! grep -q ".evolution-skills/constitution/ai-evolution-constitution.md" "$INSTRUCTIONS_FILE"; then
+      print_info "检测到宪法引用路径错误，正在修正..."
+      # 修正各种可能的错误路径格式
+      sed -i.bak 's|\.github/ai-evolution-constitution\.md|.evolution-skills/constitution/ai-evolution-constitution.md|g' "$INSTRUCTIONS_FILE"
+      sed -i.bak 's|\.copilot[^"]*ai-evolution-constitution\.md|.evolution-skills/constitution/ai-evolution-constitution.md|g' "$INSTRUCTIONS_FILE"
+      sed -i.bak 's|\.evolution-skills/ai-evolution-constitution\.md|.evolution-skills/constitution/ai-evolution-constitution.md|g' "$INSTRUCTIONS_FILE"
+      rm -f "$INSTRUCTIONS_FILE.bak"
+      print_success "已修正宪法引用路径"
+    else
+      print_info "宪法引用路径正确"
+    fi
+  else
     print_info "⚠️  建议在 .github/copilot-instructions.md 的 Part 1 中添加进化宪法引用："
     echo ""
-    echo "  <attachment filePath=\".evolution-skills/constitution/ai-evolution-constitution.md\">"
+    echo "  <attachment filePath=\".\evolution-skills/constitution/ai-evolution-constitution.md\">"
     echo "  此部分包含了 AI 助手的通用进化框架。详见上述文件。"
     echo "  </attachment>"
     echo ""
   fi
+
 fi
 
 echo ""
@@ -178,7 +192,13 @@ fi
 echo ""
 print_step "第4步：提交变更"
 
-git add .gitmodules .evolution-skills .github/copilot-instructions.md
+# 调试信息
+print_info "当前目录: $(pwd)"
+print_info "检查 git 状态..."
+test -d .git && echo "  ✓ .git 目录存在" || echo "  ✗ .git 目录不存在"
+
+# 添加文件（包括可能被修改的 AGENTS.md）
+git add .gitmodules .evolution-skills .github/copilot-instructions.md AGENTS.md 2>/dev/null || git add .gitmodules .evolution-skills .github/copilot-instructions.md
 git commit -m "feat: 集成 copilot-evolution-skills 技能库
 
 - 添加 Git submodule (.evolution-skills/skills)
