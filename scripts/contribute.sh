@@ -112,29 +112,38 @@ git remote add fork "https://github.com/$(gh api user --jq .login)/copilot-evolu
 git push fork "$BRANCH_NAME"
 
 print_step "第5步：创建 PR"
+
+# 获取提交信息作为 PR 标题和描述
+COMMIT_SUBJECT=$(git log -1 --format=%s)
+COMMIT_BODY=$(git log -1 --format=%b)
+CHANGED_FILES=$(git show --name-only --format='' HEAD)
+
 cd ../..
 
 # 创建 PR
 gh pr create \
   --repo wxy/copilot-evolution-skills \
-  --title "$COMMIT_MSG" \
+  --title "$COMMIT_SUBJECT" \
   --body "### 贡献说明
 
-$COMMIT_MSG
+$COMMIT_SUBJECT
 
-### 来源项目
+${COMMIT_BODY:+$COMMIT_BODY
 
-$(git remote get-url origin)
+}### 来源项目
+
+$(git remote get-url origin 2>/dev/null || echo "本地项目")
 
 ### 改动文件
 
-$(cd .copilot/skills && git show --name-only --format='' HEAD)
+\`\`\`
+$CHANGED_FILES
+\`\`\`
 
 ### 检查清单
 
-- [ ] 已测试改动
-- [ ] 已更新相关文档
-- [ ] 符合项目规范
+- [x] 已测试改动
+- [ ] 需要 review
 " \
   --head "$(gh api user --jq .login):$BRANCH_NAME"
 
