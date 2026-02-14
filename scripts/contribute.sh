@@ -56,17 +56,32 @@ fi
 print_step "第1步：检查本地改动"
 cd .copilot/skills
 
+# 检查是否有未提交的改动
+HAS_UNCOMMITTED=false
 if ! git diff-index --quiet HEAD --; then
-  print_info "检测到技能库的本地改动"
-else
+  HAS_UNCOMMITTED=true
+fi
+
+# 检查是否领先于远程分支
+git fetch origin main --quiet
+AHEAD_COUNT=$(git rev-list --count origin/main..HEAD)
+
+if [ "$HAS_UNCOMMITTED" = false ] && [ "$AHEAD_COUNT" -eq 0 ]; then
   print_info "没有检测到技能库的改动"
   echo "如果你想贡献新技能，请先在 .copilot/skills/ 中修改"
   exit 0
 fi
 
 # 显示改动
-print_info "改动文件："
-git status --short
+print_info "检测到技能库的改动"
+if [ "$HAS_UNCOMMITTED" = true ]; then
+  print_info "未提交的改动："
+  git status --short
+fi
+if [ "$AHEAD_COUNT" -gt 0 ]; then
+  print_info "领先远程 $AHEAD_COUNT 个提交："
+  git log origin/main..HEAD --oneline
+fi
 
 echo ""
 read -p "是否要将这些改动贡献回技能库？(y/N) " -n 1 -r
