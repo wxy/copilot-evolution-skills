@@ -1,33 +1,52 @@
-chore: 初始化 copilot-evolution-skills 项目
+feat: 迁移 12 个自定义技能到独立项目
 
-## 项目概述
-- 创建通用 AI 助手技能库独立项目
-- 项目名称：copilot-evolution-skills
-- 包含 13 个自定义技能、通用进化框架、交互式安装脚本
+## 迁移内容
+- _change-summary - 汇总提交摘要
+- _code-health-check - 提交前代码检查
+- _context-ack - 上下文校验与输出格式
+- _evolution-core - 进化能力元技能
+- _file-output-guard - 文件创建安全约束
+- _git-commit - Git 提交规范化
+- _instruction-guard - 强制读取指令文件
+- _pr-creator - PR 创建与版本控制流程
+- _release-process - 完整的发布流程
+- _session-safety - 会话超长防护
+- _traceability-check - 说明与变更校验
+- _typescript-type-safety - TypeScript mock 与类型安全
 
-## 初始内容
-- constitution/ai-evolution-constitution.md - 通用进化宪法框架
-- README.md - 项目主页和快速指南
-- SETUP.md - 安装和使用说明
-- 目录结构完整，包括 skills/、templates/、scripts/、docs/ 等
+## 迁移来源
+从 SilentFeed 项目的 `.copilot/skills/` 目录完整复制
 
-## 项目架构
-- skills/ - 待迁移的 13 个自定义技能
-- templates/ - 新项目和新技能的标准模板（待编写）
-- scripts/ - 交互式安装和验证脚本（待编写）
-- docs/ - 详细的集成和创建指南（待编写）
-- .github/ - 核心文档：安装、冲突解决、演进机制等（待编写）
+## 目录结构
+```
+skills/
+├── _change-summary/SKILL.md
+├── _code-health-check/SKILL.md
+├── _context-ack/SKILL.md
+├── _evolution-core/SKILL.md
+├── _file-output-guard/SKILL.md
+├── _git-commit/
+│   ├── SKILL.md
+│   └── references/  (commit 模板)
+├── _instruction-guard/SKILL.md
+├── _pr-creator/
+│   └── SKILL.md
+├── _release-process/SKILL.md
+├── _session-safety/SKILL.md
+├── _traceability-check/SKILL.md
+└── _typescript-type-safety/SKILL.md
+```
 
-## 后续行动
-- [ ] 从 SilentFeed 迁移 13 个技能文件
-- [ ] 编写 .github/ 中的核心指南
-- [ ] 实现交互式 setup-interactive.sh 脚本
-- [ ] 编写 templates 模板
-- [ ] 编写 docs 中的详细指南
-- [ ] 测试 SilentFeed 中的 submodule 集成
+## 验证
+- ✅ 所有 12 个技能目录完整复制
+- ✅ 各技能的参考文件和资源保留
+- ✅ 目录结构保持一致
 
-## 版本号
-v1.0.0-beta - 设计完成，初始化进行中
+## 下一步
+- 编写技能库指南文档
+- 编写模板文件
+- 实现交互式安装脚本
+- 测试 SilentFeed 中的 submodule 集成
 
 ---
 > 🤖 本提交由 _git-commit 技能生成
