@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # 一键集成脚本：将 copilot-evolution-skills 通过 submodule + sparse-checkout 集成到项目
-# 使用方式：bash <(curl -fsSL https://raw.githubusercontent.com/wxy/copilot-evolution-skills/main/scripts/setup-submodule.sh)
+# 使用方式：bash <(curl -fsSL https://raw.githubusercontent.com/wxy/copilot-evolution-skills/main/scripts/setup.sh)
 
 set -e
 
@@ -50,12 +50,26 @@ print_step "第2步：配置稀疏检出（节省空间）"
 
 cd .copilot/skills
 
-git config core.sparsecheckout true
+# 配置稀疏检出
+git config core.sparseCheckout true
+
+# 获取 git 目录（submodule 的 .git 可能是文件）
+if [ -f .git ]; then
+  GIT_DIR=$(cat .git | sed 's/gitdir: //')
+  SPARSE_CHECKOUT_FILE="$GIT_DIR/info/sparse-checkout"
+else
+  SPARSE_CHECKOUT_FILE=".git/info/sparse-checkout"
+fi
+
+# 创建目录（如果不存在）
+mkdir -p "$(dirname "$SPARSE_CHECKOUT_FILE")"
 
 # 创建稀疏检出配置
-echo "skills/" >> .git/info/sparse-checkout
-echo "constitution/" >> .git/info/sparse-checkout
-echo "version.txt" >> .git/info/sparse-checkout
+cat > "$SPARSE_CHECKOUT_FILE" << 'SPARSE_CONFIG'
+skills/
+constitution/
+version.txt
+SPARSE_CONFIG
 
 # 应用稀疏检出
 git read-tree -mu HEAD
@@ -91,21 +105,9 @@ applyTo: "**"
 
 ## Part 3: 技能库说明
 
-此项目已集成 copilot-evolution-skills（通用 AI 助手技能库），包含 12 个自定义技能。
+此项目已集成 copilot-evolution-skills（通用 AI 助手技能库）。
 
-可用技能列表：
-- _evolution-core - 进化能力元技能
-- _typescript-type-safety - TypeScript Mock 创建与错误预防
-- _git-commit - Git 提交规范化
-- _pr-creator - PR 创建与版本控制流程
-- _code-health-check - 提交前代码检查
-- _release-process - 完整的发布流程
-- _context-ack - 上下文校验与输出格式
-- _instruction-guard - 强制读取指令文件
-- _file-output-guard - 文件创建安全约束
-- _change-summary - 提交摘要汇总
-- _traceability-check - 说明与变更校验
-- _session-safety - 会话超长防护
+技能位置：`.copilot/skills/`
 
 INSTRUCTIONS
 
@@ -127,13 +129,13 @@ fi
 echo ""
 print_step "第4步：提交变更"
 
-git add .gitmodules .github/copilot-instructions.md
+git add .gitmodules .copilot/skills .github/copilot-instructions.md
 git commit -m "feat: 集成 copilot-evolution-skills 技能库
 
 - 添加 Git submodule (.copilot/skills)
 - 配置稀疏检出 (仅下载 skills/ 和 constitution/)
 - 创建/更新 .github/copilot-instructions.md
-- 包含 12 个自定义技能和通用进化宪法框架"
+- 包含可复用技能和通用进化宪法框架"
 
 print_success "已提交变更"
 
@@ -150,19 +152,8 @@ echo "  ✅ 创建/更新 .github/copilot-instructions.md"
 echo "  ✅ 自动提交变更"
 echo ""
 
-echo "现在可用的 12 个技能："
-echo "  • _evolution-core - 进化能力元技能"
-echo "  • _typescript-type-safety - TypeScript Mock 创建与错误预防"
-echo "  • _git-commit - Git 提交规范化"
-echo "  • _pr-creator - PR 创建与版本控制流程"
-echo "  • _code-health-check - 提交前代码检查"
-echo "  • _release-process - 完整的发布流程"
-echo "  • _context-ack - 上下文校验与输出格式"
-echo "  • _instruction-guard - 强制读取指令文件"
-echo "  • _file-output-guard - 文件创建安全约束"
-echo "  • _change-summary - 提交摘要汇总"
-echo "  • _traceability-check - 说明与变更校验"
-echo "  • _session-safety - 会话超长防护"
+echo "技能库位置："
+echo "  .copilot/skills/"
 echo ""
 
 echo "下一步："
