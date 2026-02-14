@@ -41,7 +41,7 @@ if [ ! -d ".git" ]; then
 fi
 
 # 检查 submodule 是否存在（.git 可能是文件或目录）
-if [ ! -e ".copilot/skills/.git" ]; then
+if [ ! -e ".evolution-skills/.git" ]; then
   print_error "未找到技能库 submodule"
   exit 1
 fi
@@ -54,7 +54,7 @@ if ! command -v gh &> /dev/null; then
 fi
 
 print_step "第1步：检查本地改动"
-cd .copilot/skills
+cd .evolution-skills
 
 # 检查是否有未提交的改动
 HAS_UNCOMMITTED=false
@@ -68,7 +68,7 @@ AHEAD_COUNT=$(git rev-list --count origin/main..HEAD)
 
 if [ "$HAS_UNCOMMITTED" = false ] && [ "$AHEAD_COUNT" -eq 0 ]; then
   print_info "没有检测到技能库的改动"
-  echo "如果你想贡献新技能，请先在 .copilot/skills/ 中修改"
+  echo "如果你想贡献新技能，请先在 .evolution-skills/ 中修改"
   exit 0
 fi
 

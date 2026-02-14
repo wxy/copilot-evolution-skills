@@ -41,7 +41,7 @@ if [ ! -d ".git" ]; then
 fi
 
 # 检查 submodule 是否存在（.git 可能是文件或目录）
-if [ ! -e ".copilot/.git" ]; then
+if [ ! -e ".evolution-skills/.git" ]; then
   print_error "未找到技能库 submodule"
   echo "请先运行 setup.sh 集成技能库"
   exit 1
@@ -57,7 +57,7 @@ else
 fi
 
 print_step "第2步：更新技能库"
-cd .copilot
+cd .evolution-skills
 
 # 获取当前版本
 CURRENT_VERSION=$(git rev-parse HEAD | cut -c1-8)
@@ -106,7 +106,7 @@ fi
 cd ../..
 
 print_step "第4步：提交更新"
-git add .copilot
+git add .evolution-skills
 git commit -m "chore: 更新 copilot-evolution-skills 到 $LATEST_VERSION"
 
 if [ "$STASHED" = true ]; then
@@ -128,7 +128,7 @@ if [ -f "AGENTS.md" ]; then
       '<project_skills>' \
       > "$SKILLS_CONTENT_FILE"
 
-    for skill_dir in .copilot/skills/_*; do
+    for skill_dir in .evolution-skills/skills/_*; do
       if [ -d "$skill_dir" ]; then
         skill_name=$(basename "$skill_dir")
         skill_file="$skill_dir/SKILL.md"
@@ -139,7 +139,7 @@ if [ -f "AGENTS.md" ]; then
           fi
           [ -z "$description" ] && description="可进化技能"
 
-          printf '<skill>\n<name>%s</name>\n<description>%s</description>\n<file>.copilot/skills/%s/SKILL.md</file>\n</skill>\n\n' \
+          printf '<skill>\n<name>%s</name>\n<description>%s</description>\n<file>.evolution-skills/skills/%s/SKILL.md</file>\n</skill>\n\n' \
             "$skill_name" "$description" "$skill_name" \
             >> "$SKILLS_CONTENT_FILE"
         fi

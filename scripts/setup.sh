@@ -42,19 +42,19 @@ if [ ! -d ".git" ]; then
 fi
 
 print_step "第1步：添加 submodule"
-if [ -e ".copilot/.git" ] || grep -q "copilot-evolution-skills" .gitmodules 2>/dev/null; then
+if [ -e ".evolution-skills/.git" ] || grep -q "copilot-evolution-skills" .gitmodules 2>/dev/null; then
   print_info "检测到已存在的 submodule，切换为更新流程"
   bash <(curl -fsSL https://raw.githubusercontent.com/wxy/copilot-evolution-skills/main/scripts/update.sh)
   exit 0
 else
-  git submodule add https://github.com/wxy/copilot-evolution-skills.git .copilot
+  git submodule add https://github.com/wxy/copilot-evolution-skills.git .evolution-skills
   print_success "已添加 submodule"
 fi
 
 echo ""
 print_step "第2步：配置稀疏检出（节省空间）"
 
-cd .copilot
+cd .evolution-skills
 
 # 配置稀疏检出
 git config core.sparseCheckout true
@@ -71,7 +71,7 @@ fi
 mkdir -p "$(dirname "$SPARSE_CHECKOUT_FILE")"
 
 # 创建稀疏检出配置
-printf "skills/\n.github/ai-evolution-constitution.md\nversion.txt\n" > "$SPARSE_CHECKOUT_FILE"
+printf "skills/\nai-evolution-constitution.md\nversion.txt\n" > "$SPARSE_CHECKOUT_FILE"
 
 # 应用稀疏检出
 git read-tree -mu HEAD
@@ -97,7 +97,7 @@ if [ ! -f "$INSTRUCTIONS_FILE" ]; then
     '' \
     '## Part 1: 通用框架 - AI 系统进化宪法' \
     '' \
-    '<attachment filePath=".github/ai-evolution-constitution.md">' \
+    '<attachment filePath=".evolution-skills/ai-evolution-constitution.md">' \
     '此部分包含了 AI 助手的通用进化框架。详见上述文件。该内容与具体项目无关，可独立维护和在多个项目中共享。' \
     '</attachment>' \
     '' \
@@ -109,7 +109,7 @@ if [ ! -f "$INSTRUCTIONS_FILE" ]; then
     '' \
     '此项目已集成 copilot-evolution-skills（通用 AI 助手技能库）。' \
     '' \
-    '技能位置：`.copilot/skills/`' \
+    '技能位置：`.evolution-skills/skills/`' \
     '' \
     > "$INSTRUCTIONS_FILE"
 
@@ -121,7 +121,7 @@ else
   if ! grep -q "ai-evolution-constitution.md" "$INSTRUCTIONS_FILE"; then
     print_info "⚠️  建议在 .github/copilot-instructions.md 的 Part 1 中添加进化宪法引用："
     echo ""
-    echo "  <attachment filePath=\".github/ai-evolution-constitution.md\">"
+    echo "  <attachment filePath=\".evolution-skills/ai-evolution-constitution.md\">"
     echo "  此部分包含了 AI 助手的通用进化框架。详见上述文件。"
     echo "  </attachment>"
     echo ""
@@ -143,7 +143,7 @@ if [ -f "AGENTS.md" ]; then
       '<project_skills>' \
       > "$SKILLS_CONTENT_FILE"
 
-    for skill_dir in .copilot/skills/_*; do
+    for skill_dir in .evolution-skills/skills/_*; do
       if [ -d "$skill_dir" ]; then
         skill_name=$(basename "$skill_dir")
         skill_file="$skill_dir/SKILL.md"
@@ -154,7 +154,7 @@ if [ -f "AGENTS.md" ]; then
           fi
           [ -z "$description" ] && description="可进化技能"
 
-          printf '<skill>\n<name>%s</name>\n<description>%s</description>\n<file>.copilot/skills/%s/SKILL.md</file>\n</skill>\n\n' \
+          printf '<skill>\n<name>%s</name>\n<description>%s</description>\n<file>.evolution-skills/skills/%s/SKILL.md</file>\n</skill>\n\n' \
             "$skill_name" "$description" "$skill_name" \
             >> "$SKILLS_CONTENT_FILE"
         fi
@@ -178,10 +178,10 @@ fi
 echo ""
 print_step "第4步：提交变更"
 
-git add .gitmodules .copilot .github/copilot-instructions.md
+git add .gitmodules .evolution-skills .github/copilot-instructions.md
 git commit -m "feat: 集成 copilot-evolution-skills 技能库
 
-- 添加 Git submodule (.copilot/skills)
+- 添加 Git submodule (.evolution-skills/skills)
 - 配置稀疏检出 (仅下载 skills/ 和 constitution/)
 - 创建/更新 .github/copilot-instructions.md
 - 包含可复用技能和通用进化宪法框架"
@@ -202,7 +202,7 @@ echo "  ✅ 自动提交变更"
 echo ""
 
 echo "技能库位置："
-echo "  .copilot/skills/"
+echo "  .evolution-skills/skills/"
 echo ""
 
 echo "下一步："
