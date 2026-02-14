@@ -70,7 +70,7 @@ print_info "最新版本: $LATEST_VERSION"
 
 if [ "$CURRENT_VERSION" == "$LATEST_VERSION" ]; then
   print_success "已是最新版本"
-  cd ../..
+  cd ..
   if [ "$STASHED" = true ]; then
     git stash pop
   fi
@@ -97,13 +97,13 @@ else
     echo "请手动解决冲突后运行："
     echo "  git add ."
     echo "  git rebase --continue"
-    echo "  cd ../.."
+    echo "  cd .."
     echo "  git commit -am 'chore: 更新技能库'"
     exit 1
   fi
 fi
 
-cd ../..
+cd ..
 
 print_step "第4步：提交更新"
 git add .evolution-skills

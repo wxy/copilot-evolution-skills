@@ -77,7 +77,7 @@ printf "skills/\nconstitution/\nversion.txt\n" > "$SPARSE_CHECKOUT_FILE"
 git read-tree -mu HEAD
 
 print_success "已配置稀疏检出"
-cd ../..
+cd ..
 
 echo ""
 print_step "第3步：更新/创建 copilot-instructions.md"
