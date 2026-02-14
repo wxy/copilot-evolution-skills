@@ -1,0 +1,18 @@
+# 本地文件（不入库）
+.DS_Store
+.env
+.env.local
+
+# 日志
+*.log
+npm-debug.log*
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# 临时文件
+temp/
+tmp/
