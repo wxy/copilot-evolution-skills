@@ -229,3 +229,11 @@ bash <(curl -fsSL https://raw.githubusercontent.com/wxy/copilot-evolution-skills
 - 贡献改进：`bash <(curl -fsSL https://raw.githubusercontent.com/wxy/copilot-evolution-skills/main/scripts/contribute.sh)`
 - 检查版本：`cat .copilot/skills/version.txt`
 
+
+## 快速参考
+
+### 常用命令
+
+- 更新技能：`bash <(curl -fsSL https://raw.githubusercontent.com/wxy/copilot-evolution-skills/main/scripts/update.sh)`
+- 贡献改进：`bash <(curl -fsSL https://raw.githubusercontent.com/wxy/copilot-evolution-skills/main/scripts/contribute.sh)`
+- 检查版本：`cat .copilot/skills/version.txt`
