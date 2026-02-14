@@ -91,7 +91,7 @@ AI 会自动完成：
 
 **必须使用项目脚本，禁止直接使用 gh 命令**
 
-- ✅ **正确**：`bash .copilot/skills/_pr-creator/scripts/create-pr.sh`
+- ✅ **正确**：`bash .evolution-skills/_pr-creator/scripts/create-pr.sh`
 - ❌ **错误**：`gh pr create --title ... --body ...`
 
 **为什么？**
@@ -124,8 +124,8 @@ bump = "major" if has_breaking else "minor" if has_feat else "patch"
 ### 2. 生成 PR 描述
 
 使用 `create_file` 创建 `.github/PR_DESCRIPTION.local.md`，参考模板：
-- 中文：`.copilot/skills/_pr-creator/references/pull_request_template_zh.md`
-- 英文：`.copilot/skills/_pr-creator/references/pull_request_template.md`
+- 中文：`.evolution-skills/_pr-creator/references/pull_request_template_zh.md`
+- 英文：`.evolution-skills/_pr-creator/references/pull_request_template.md`
 
 **提交摘要（必填）**：在 PR 描述中追加“提交摘要”段落，基于下述命令生成：
 ```bash
@@ -153,7 +153,7 @@ VERSION_BUMP_AI="minor" \
 CURRENT_VERSION="0.6.4" \
 NEW_VERSION="0.7.0" \
 VERSION_FILE="package.json" \
-bash .copilot/skills/_pr-creator/scripts/create-pr.sh
+bash .evolution-skills/_pr-creator/scripts/create-pr.sh
 ```
 
 **必需变量**：`PR_BRANCH`, `PR_TITLE_AI`, `VERSION_BUMP_AI`
@@ -166,7 +166,7 @@ bash .copilot/skills/_pr-creator/scripts/create-pr.sh
 
 | 问题 | 原因 | 修复 |
 |-----|------|------|
-| 脚本路径错误 | 使用了旧路径 | 使用 `.copilot/skills/_pr-creator/scripts/create-pr.sh` |
+| 脚本路径错误 | 使用了旧路径 | 使用 `.evolution-skills/_pr-creator/scripts/create-pr.sh` |
 | 推送失败 (non-fast-forward) | 分支落后远端 | `git fetch && git rebase origin/<branch>` |
 | 未提交变更警告 | 临时文件未清理 | `rm -f .github/PR_DESCRIPTION.local.md` |
 | 重复 version bump | 多次运行脚本 | 后续运行使用 `VERSION_BUMP_AI=skip` |
@@ -213,7 +213,7 @@ PR_BODY_AI="$(cat .github/PR_DESCRIPTION.local.md)" \
 PR_BRANCH="feat/xxx" \
 PR_TITLE_AI="feat: xxx" \
 VERSION_BUMP_AI="minor" \
-bash .copilot/skills/_pr-creator/scripts/create-pr.sh
+bash .evolution-skills/_pr-creator/scripts/create-pr.sh
 ```
 
 ### 错误 2：忘记生成提交摘要
@@ -257,8 +257,8 @@ git log --oneline origin/master..HEAD
 | `DRY_RUN` | `true` / `false` | 预览模式 |
 
 **PR 模板路径**：
-- `.copilot/skills/_pr-creator/references/pull_request_template_zh.md`
-- `.copilot/skills/_pr-creator/references/pull_request_template.md`
+- `.evolution-skills/_pr-creator/references/pull_request_template_zh.md`
+- `.evolution-skills/_pr-creator/references/pull_request_template.md`
 
 ---
 
@@ -288,7 +288,7 @@ create_file(
 
 # 3. 执行脚本
 run_in_terminal(
-  command="bash .copilot/skills/_pr-creator/scripts/create-pr.sh",
+  command="bash .evolution-skills/_pr-creator/scripts/create-pr.sh",
   env={
     "PR_BRANCH": "feat/user-profile",
     "PR_TITLE_AI": "feat: 添加用户配置",
@@ -312,7 +312,7 @@ VERSION_BUMP_AI="minor" \
 CURRENT_VERSION="0.7.0" \
 NEW_VERSION="0.8.0" \
 VERSION_FILE="package.json" \
-bash .copilot/skills/_pr-creator/scripts/create-pr.sh
+bash .evolution-skills/_pr-creator/scripts/create-pr.sh
 ```
 
 ---

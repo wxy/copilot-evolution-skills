@@ -22,7 +22,7 @@ description: 进化能力元技能。用于识别可进化场景（重复错误�
 3. **抽象**：提炼为可复用规则或流程。
 4. **落地**：
    - 若是通用规则 → 更新 `.github/copilot-instructions.md`（宪法/指南层）。
-   - 若是可复用流程 → 创建或改进技能文件（`.copilot/skills/.../SKILL.md`）。
+   - 若是可复用流程 → 创建或改进技能文件（`.evolution-skills/.../SKILL.md`）。
 5. **登记**：
    - 在 `.github/copilot-instructions.md` 的"自定义技能库"表格中记录
    - 在 `AGENTS.md` 的 `<project_skills>` 部分添加技能定义（见下文）
@@ -159,7 +159,7 @@ description: 进化能力元技能。用于识别可进化场景（重复错误�
 <name>_your-skill-name</name>
 <description>技能的简要描述，说明用途、适用场景、核心能力</description>
 <location>project</location>
-<path>.copilot/skills/_your-skill-name/SKILL.md</path>
+<path>.evolution-skills/_your-skill-name/SKILL.md</path>
 </skill>
 ```
 
@@ -170,7 +170,7 @@ description: 进化能力元技能。用于识别可进化场景（重复错误�
 - `<path>` 提供完整的相对路径
 
 **为什么手动维护**：
-- `.copilot/skills/` 不由 OpenSkills 管理
+- `.evolution-skills/` 不由 OpenSkills 管理
 - `openskills sync` 只更新 `<available_skills>` 部分
 - `<project_skills>` 部分是项目特定的，不会被覆盖
 
@@ -194,7 +194,7 @@ description: 进化能力元技能。用于识别可进化场景（重复错误�
 - **文档** = "为什么"和"是什么"（说明性、知识性）
 - **技能** = "怎么做"（执行性、操作性）
 - 技能引用文档，但不替代文档
-- 文档在 `.github/`，技能在 `.copilot/skills/`
+- 文档在 `.github/`，技能在 `.evolution-skills/`
 
 ## 📝 案例库
 
@@ -234,7 +234,7 @@ description: 进化能力元技能。用于识别可进化场景（重复错误�
 
 ## 🔄 改进建议
 
-- 目前技能路径固定为 `.copilot/skills/`，未来可考虑按领域分类
+- 目前技能路径固定为 `.evolution-skills/`，未来可考虑按领域分类
 - 当技能数量增多时，可在 AGENTS.md 中按类别分组
 - 考虑添加技能依赖关系声明（如某技能依赖另一技能）
 - 可创建"技能进化历史"文档，记录每个技能的版本演变

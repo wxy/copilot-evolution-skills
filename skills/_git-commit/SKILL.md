@@ -107,13 +107,13 @@ git add -p
 **推荐做法**：直接复制标准模板，填充实际内容
 
 **模板位置**：
-- 中文：`.copilot/skills/_git-commit/references/commit_template_zh.md`
-- 英文：`.copilot/skills/_git-commit/references/commit_template.md`
+- 中文：`.evolution-skills/_git-commit/references/commit_template_zh.md`
+- 英文：`.evolution-skills/_git-commit/references/commit_template.md`
 
 **使用方法**：
 ```typescript
 // 读取模板
-const template = read_file(".copilot/skills/_git-commit/references/commit_template_zh.md");
+const template = read_file(".evolution-skills/_git-commit/references/commit_template_zh.md");
 
 // 填充实际内容
 const content = template.replace("type(scope): 简短描述", "feat(ai): 添加推荐聚类算法")
@@ -250,7 +250,7 @@ run_in_terminal({
 **安全的完整工作流示例**：
 ```bash
 # 明确指定要提交的文件
-git add .copilot/skills/_git-commit/SKILL.md && \
+git add .evolution-skills/_git-commit/SKILL.md && \
 git commit -F .github/COMMIT_DESCRIPTION.local.md && \
 rm .github/COMMIT_DESCRIPTION.local.md
 ```
@@ -437,7 +437,7 @@ git commit --amend --no-edit
 ```markdown
 ---
 
-**Commit Tool**: _git-commit Skill (`.copilot/skills/_git-commit/SKILL.md`)
+**Commit Tool**: _git-commit Skill (`.evolution-skills/_git-commit/SKILL.md`)
 ```
 
 或更简洁的版本：

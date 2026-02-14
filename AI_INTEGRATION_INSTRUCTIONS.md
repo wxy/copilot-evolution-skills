@@ -9,8 +9,8 @@
 当用户要求集成本技能库时，你（AI）需要：
 
 1. **将核心文件复制到用户项目**
-   - `skills/` → 用户项目的 `.copilot/skills/skills/`
-   - `constitution/` → 用户项目的 `.copilot/skills/constitution/`
+   - `skills/` → 用户项目的 `.evolution-skills/skills/`
+   - `constitution/` → 用户项目的 `.evolution-skills/constitution/`
 
 2. **更新或创建用户项目的 `copilot-instructions.md`**
    - 通过 `<attachment>` 标签引用进化宪法
@@ -42,7 +42,7 @@ bash scripts/integrate-to-project.sh /path/to/user-project
 
 **脚本的职责**：
 - ✅ 检查目标项目有效性
-- ✅ 创建 `.copilot/skills/` 目录结构
+- ✅ 创建 `.evolution-skills/` 目录结构
 - ✅ 复制 `skills/` 和 `constitution/` 目录
 - ✅ 生成或更新 `copilot-instructions.md`
 - ✅ 添加 attachment 引用
@@ -72,7 +72,7 @@ bash scripts/verify-integration.sh /path/to/user-project
 - 项目指令文件（已配置）
 
 目录结构：
-.copilot/skills/
+.evolution-skills/
 ├── skills/              (12 个技能)
 ├── constitution/        (进化宪法)
 └── README.md           (使用说明)
@@ -108,16 +108,16 @@ bash scripts/integrate-to-project.sh /path/to/user-project [--auto-commit]
    - 检查本脚本自身位置（确定技能库根目录）
 
 2. **创建目录**
-   - 创建 `<project>/.copilot/skills/`
+   - 创建 `<project>/.evolution-skills/`
 
 3. **复制核心文件**
-   - 从技能库复制 `skills/` → `<project>/.copilot/skills/skills/`
-   - 从技能库复制 `constitution/` → `<project>/.copilot/skills/constitution/`
-   - 保留 `<project>/.copilot/skills/` 中用户的任何定制文件（如 `skills-overrides/`）
+   - 从技能库复制 `skills/` → `<project>/.evolution-skills/skills/`
+   - 从技能库复制 `constitution/` → `<project>/.evolution-skills/constitution/`
+   - 保留 `<project>/.evolution-skills/` 中用户的任何定制文件（如 `skills-overrides/`）
 
 4. **处理 copilot-instructions.md**
    - 如果文件不存在，使用模板创建
-   - 如果存在，检查是否有 `<attachment filePath=".copilot/skills/constitution/ai-evolution-constitution.md">`
+   - 如果存在，检查是否有 `<attachment filePath=".evolution-skills/constitution/ai-evolution-constitution.md">`
    - 如果缺失，在 Part 1 后添加
    - 保留用户的 Part 2 和 Part 3
 
@@ -170,7 +170,7 @@ bash scripts/verify-integration.sh /path/to/user-project [--verbose]
 
 **验证项目**：
 1. ✅ 技能文件完整性（检查 12 个 SKILL.md）
-2. ✅ 目录结构（`.copilot/skills/` 存在且包含正确子目录）
+2. ✅ 目录结构（`.evolution-skills/` 存在且包含正确子目录）
 3. ✅ 进化宪法存在和可读
 4. ✅ copilot-instructions.md 语法和 attachment 引用
 5. ✅ SKILLS_INTEGRATION_INFO.md 存在
@@ -184,7 +184,7 @@ bash scripts/verify-integration.sh /path/to/user-project [--verbose]
    └─ 12 个 SKILL.md 文件完整
 
 ✅ 目录结构验证
-   └─ .copilot/skills/ 存在
+   └─ .evolution-skills/ 存在
    └─ skills/ 包含 12 个技能目录
    └─ constitution/ 包含进化宪法
 
@@ -224,8 +224,8 @@ user-project/
 
 **关键文件说明**：
 
-- **.copilot/skills/skills/** - 12 个自定义技能，用户的 AI 可以直接使用
-- **.copilot/skills/constitution/** - 通用进化宪法，所有项目共享
+- **.evolution-skills/skills/** - 12 个自定义技能，用户的 AI 可以直接使用
+- **.evolution-skills/constitution/** - 通用进化宪法，所有项目共享
 - **.github/copilot-instructions.md** - 项目指令文件，通过 attachment 引用进化宪法
 - **.github/SKILLS_INTEGRATION_INFO.md** - 集成信息（何时集成、版本号、更新方法等）
 
@@ -236,7 +236,7 @@ user-project/
 如果技能库有新版本，用户可以请求 AI 更新：
 
 ```bash
-bash .copilot/skills/scripts/update-integration.sh [--backup]
+bash .evolution-skills/scripts/update-integration.sh [--backup]
 ```
 
 **更新脚本**：
@@ -250,7 +250,7 @@ bash .copilot/skills/scripts/update-integration.sh [--backup]
 
 ## 常见问题
 
-### Q: 如果用户项目已有 `.copilot/skills/` 怎么办？
+### Q: 如果用户项目已有 `.evolution-skills/` 怎么办？
 
 A: 脚本会：
 1. 备份现有内容为 `.copilot/skills.backup.<timestamp>/`
@@ -273,9 +273,9 @@ A: 脚本会：
 
 ### Q: 用户可以定制某些技能吗？
 
-A: 可以，通过创建 `.copilot/skills/skills-overrides/` 目录：
+A: 可以，通过创建 `.evolution-skills/skills-overrides/` 目录：
 ```
-.copilot/skills/
+.evolution-skills/
 ├── skills/              (原始技能)
 └── skills-overrides/
     └── _custom-skill/
@@ -352,7 +352,7 @@ $ bash scripts/integrate-to-project.sh ~/develop/SilentFeed
 用户：有新版本的技能库，请帮我更新
 
 AI 执行：
-$ bash .copilot/skills/scripts/update-integration.sh --backup
+$ bash .evolution-skills/scripts/update-integration.sh --backup
 ✅ 更新完成！
    - 已备份当前版本
    - 12 个技能已更新

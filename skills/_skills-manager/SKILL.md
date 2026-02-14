@@ -43,7 +43,7 @@ bash <(curl -fsSL https://raw.githubusercontent.com/wxy/copilot-evolution-skills
 **前置条件检查**：
 ```bash
 # 检查是否有本地修改
-cd .copilot/skills
+cd .evolution-skills
 git status --short
 ```
 
@@ -71,7 +71,7 @@ bash <(curl -fsSL https://raw.githubusercontent.com/wxy/copilot-evolution-skills
 验证当前使用的技能库版本：
 
 ```bash
-cd .copilot/skills
+cd .evolution-skills
 cat version.txt
 git log -1 --format="%H %s"
 ```
@@ -89,7 +89,7 @@ git log -1 --format="%H %s"
 git submodule status
 
 # 检查稀疏检出配置
-cd .copilot/skills
+cd .evolution-skills
 cat $(cat .git | sed 's/gitdir: //')/info/sparse-checkout
 
 # 列出可用技能
@@ -102,7 +102,7 @@ ls -1 skills/
 
 **解决方案**：
 ```bash
-cd .copilot/skills
+cd .evolution-skills
 git stash
 bash <(curl -fsSL https://raw.githubusercontent.com/wxy/copilot-evolution-skills/main/scripts/update.sh)
 git stash pop  # 如需恢复本地修改
@@ -116,7 +116,7 @@ git stash pop  # 如需恢复本地修改
 gh repo fork wxy/copilot-evolution-skills --clone=false
 
 # 2. 添加 fork 为远程仓库
-cd .copilot/skills
+cd .evolution-skills
 git remote add fork https://github.com/YOUR_USERNAME/copilot-evolution-skills.git
 
 # 3. 重新运行贡献脚本
@@ -125,18 +125,18 @@ git remote add fork https://github.com/YOUR_USERNAME/copilot-evolution-skills.gi
 ### Q: 如何查看技能库的更新历史？
 
 ```bash
-cd .copilot/skills
+cd .evolution-skills
 git log --oneline --graph -10
 ```
 
 ### Q: 更新后发现某个技能有问题，如何回滚？
 
 ```bash
-cd .copilot/skills
+cd .evolution-skills
 git log --oneline  # 找到回滚目标版本
 git checkout <commit-hash>
 cd ../..
-git add .copilot/skills
+git add .evolution-skills
 git commit -m "fix: 回滚技能库到稳定版本"
 ```
 
@@ -174,7 +174,7 @@ git commit -m "fix: 回滚技能库到稳定版本"
 这个技能本身也是可进化的！当你改进了这个管理技能时：
 
 ```bash
-# 1. 编辑 .copilot/skills/skills/_skills-manager/SKILL.md
+# 1. 编辑 .evolution-skills/skills/_skills-manager/SKILL.md
 # 2. 测试改进
 # 3. 使用本技能贡献自己
 bash <(curl -fsSL https://raw.githubusercontent.com/wxy/copilot-evolution-skills/main/scripts/contribute.sh)
@@ -194,7 +194,7 @@ bash <(curl -fsSL https://raw.githubusercontent.com/wxy/copilot-evolution-skills
 **用户**: "我改进了 _git-commit 技能，贡献回去"
 
 **AI 执行**:
-1. 检查 `.copilot/skills/` 的修改
+1. 检查 `.evolution-skills/` 的修改
 2. 运行 `contribute.sh` 脚本
 3. 创建 PR 并提供链接
 4. 提示等待 review
@@ -227,7 +227,7 @@ bash <(curl -fsSL https://raw.githubusercontent.com/wxy/copilot-evolution-skills
 
 - 更新技能：`bash <(curl -fsSL https://raw.githubusercontent.com/wxy/copilot-evolution-skills/main/scripts/update.sh)`
 - 贡献改进：`bash <(curl -fsSL https://raw.githubusercontent.com/wxy/copilot-evolution-skills/main/scripts/contribute.sh)`
-- 检查版本：`cat .copilot/skills/version.txt`
+- 检查版本：`cat .evolution-skills/version.txt`
 
 
 ## 快速参考
@@ -236,4 +236,4 @@ bash <(curl -fsSL https://raw.githubusercontent.com/wxy/copilot-evolution-skills
 
 - 更新技能：`bash <(curl -fsSL https://raw.githubusercontent.com/wxy/copilot-evolution-skills/main/scripts/update.sh)`
 - 贡献改进：`bash <(curl -fsSL https://raw.githubusercontent.com/wxy/copilot-evolution-skills/main/scripts/contribute.sh)`
-- 检查版本：`cat .copilot/skills/version.txt`
+- 检查版本：`cat .evolution-skills/version.txt`

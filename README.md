@@ -17,7 +17,7 @@ bash <(curl -fsSL https://raw.githubusercontent.com/wxy/copilot-evolution-skills
 ```
 
 **脚本自动完成：**
-- ✅ 添加 Git submodule 到 `.copilot/skills/`
+- ✅ 添加 Git submodule 到 `.evolution-skills/`
 - ✅ 配置稀疏检出（仅下载 `skills/` 和 `constitution/`）
 - ✅ 更新 `.github/copilot-instructions.md`（添加进化宪法引用）
 - ✅ 自动提交变更
@@ -25,7 +25,7 @@ bash <(curl -fsSL https://raw.githubusercontent.com/wxy/copilot-evolution-skills
 **验证：**
 ```bash
 git submodule status
-ls -la .copilot/skills/
+ls -la .evolution-skills/
 ```
 
 **完成：**

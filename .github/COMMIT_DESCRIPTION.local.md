@@ -15,7 +15,7 @@ feat: 迁移 12 个自定义技能到独立项目
 - _typescript-type-safety - TypeScript mock 与类型安全
 
 ## 迁移来源
-从 SilentFeed 项目的 `.copilot/skills/` 目录完整复制
+从 SilentFeed 项目的 `.evolution-skills/` 目录完整复制
 
 ## 目录结构
 ```
