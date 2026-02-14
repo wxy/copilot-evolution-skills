@@ -2,7 +2,7 @@
 
 # 集成脚本：将 copilot-evolution-skills 集成到用户项目
 # 用途：一键集成技能库到任何项目
-# 用法：bash scripts/integrate-to-project.sh <project-path> [--auto-commit]
+# 用法：bash integrate-to-project.sh <project-path> [--auto-commit] [--source <source-path-or-url>]
 
 set -e  # 任何错误时立即退出
 
@@ -27,20 +27,45 @@ print_info() {
 
 # 检查参数
 if [ -z "$1" ]; then
-  print_error "用法: bash integrate-to-project.sh <project-path> [--auto-commit]"
+  print_error "用法: bash integrate-to-project.sh <project-path> [--auto-commit] [--source <source-path-or-url>]"
   echo ""
   echo "参数说明:"
-  echo "  <project-path>   用户项目的根目录（必需）"
-  echo "  --auto-commit    自动提交更改（仅当项目是 Git 仓库时）"
+  echo "  <project-path>           用户项目的根目录（必需）"
+  echo "  --auto-commit            自动提交更改（仅当项目是 Git 仓库时）"
+  echo "  --source <path-or-url>   技能库源地址（本地路径或 GitHub URL）"
+  echo ""
+  echo "示例:"
+  echo "  # 本地集成"
+  echo "  bash integrate-to-project.sh . --auto-commit --source /path/to/copilot-evolution-skills"
+  echo ""
+  echo "  # 远程集成（从 GitHub）"
+  echo "  bash integrate-to-project.sh . --auto-commit --source https://github.com/wxy/copilot-evolution-skills"
   exit 1
 fi
 
 TARGET_PROJECT="$1"
 AUTO_COMMIT=false
+SOURCE=""
 
-if [ "$2" == "--auto-commit" ]; then
-  AUTO_COMMIT=true
-fi
+# 解析参数
+i=2
+while [ $i -le $# ]; do
+  case "${!i}" in
+    --auto-commit)
+      AUTO_COMMIT=true
+      i=$((i+1))
+      ;;
+    --source)
+      i=$((i+1))
+      SOURCE="${!i}"
+      i=$((i+1))
+      ;;
+    *)
+      print_error "未知参数: ${!i}"
+      exit 1
+      ;;
+  esac
+done
 
 # 验证目标项目路径
 if [ ! -d "$TARGET_PROJECT" ]; then
@@ -48,9 +73,51 @@ if [ ! -d "$TARGET_PROJECT" ]; then
   exit 1
 fi
 
-# 获取技能库根目录
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-SKILLS_ROOT="$(dirname "$SCRIPT_DIR")"
+# 确定技能库源
+if [ -z "$SOURCE" ]; then
+  # 尝试使用本地脚本位置
+  if [ -n "${BASH_SOURCE[0]}" ] && [ -f "${BASH_SOURCE[0]}" ]; then
+    SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    SKILLS_ROOT="$(dirname "$SCRIPT_DIR")"
+    if [ -d "$SKILLS_ROOT/skills" ]; then
+      SOURCE="$SKILLS_ROOT"
+      print_info "使用本地技能库源: $SOURCE"
+    fi
+  fi
+  
+  # 如果本地源不可用，默认使用 GitHub
+  if [ -z "$SOURCE" ]; then
+    SOURCE="https://github.com/wxy/copilot-evolution-skills"
+    print_info "未找到本地源，将使用 GitHub 远程源: $SOURCE"
+  fi
+fi
+
+# 验证和规范化源地址
+if [[ "$SOURCE" == http://* ]] || [[ "$SOURCE" == https://* ]]; then
+  # 远程 URL
+  GITHUB_URL="$SOURCE"
+  # 规范化：移除末尾的 .git
+  GITHUB_URL="${GITHUB_URL%.git}"
+  # 确保使用原始内容 URL
+  if [[ "$GITHUB_URL" != *"/raw/"* ]]; then
+    GITHUB_URL="${GITHUB_URL}/raw/main"
+  fi
+  SKILLS_MODE="remote"
+  print_info "源模式: 远程 (GitHub)"
+else
+  # 本地路径
+  if [ ! -d "$SOURCE" ]; then
+    print_error "本地技能库路径不存在: $SOURCE"
+    exit 1
+  fi
+  if [ ! -d "$SOURCE/skills" ]; then
+    print_error "找不到 skills 目录: $SOURCE/skills"
+    exit 1
+  fi
+  SKILLS_ROOT="$SOURCE"
+  SKILLS_MODE="local"
+  print_info "源模式: 本地"
+fi
 
 print_info "开始集成..."
 echo ""
@@ -63,36 +130,135 @@ print_success "已创建 .copilot/skills 目录"
 # 步骤 2：复制 skills 目录
 echo ""
 echo "📚 复制技能库..."
-if [ -d "$TARGET_PROJECT/.copilot/skills/skills" ]; then
-  print_info "检测到现有 skills 目录，创建备份..."
-  BACKUP_DIR="$TARGET_PROJECT/.copilot/skills.backup.$(date +%Y%m%d_%H%M%S)"
-  cp -r "$TARGET_PROJECT/.copilot/skills" "$BACKUP_DIR"
-  print_info "已备份到: $BACKUP_DIR"
-  rm -rf "$TARGET_PROJECT/.copilot/skills/skills"
+
+# 创建临时目录用于远程下载
+TMP_DIR=""
+if [ "$SKILLS_MODE" = "remote" ]; then
+  TMP_DIR=$(mktemp -d)
+  print_info "创建临时目录: $TMP_DIR"
 fi
 
-cp -r "$SKILLS_ROOT/skills" "$TARGET_PROJECT/.copilot/skills/"
+# 备份现有的 skills 目录
+if [ -d "$TARGET_PROJECT/.copilot/skills" ] && [ "$(ls -A "$TARGET_PROJECT/.copilot/skills")" ]; then
+  print_info "检测到现有 skills 目录，创建备份..."
+  BACKUP_DIR="$TARGET_PROJECT/.copilot/skills.backup.$(date +%Y%m%d_%H%M%S)"
+  mv "$TARGET_PROJECT/.copilot/skills" "$BACKUP_DIR"
+  mkdir -p "$TARGET_PROJECT/.copilot/skills"
+  print_info "已备份到: $BACKUP_DIR"
+fi
+
+# 复制 skills 目录
+if [ "$SKILLS_MODE" = "local" ]; then
+  cp -r "$SKILLS_ROOT/skills"/* "$TARGET_PROJECT/.copilot/skills/" || {
+    print_error "无法复制本地 skills 目录"
+    exit 1
+  }
+else
+  # 从远程下载 skills
+  print_info "从远程下载 skills 目录..."
+  mkdir -p "$TMP_DIR/skills"
+  
+  # 获取 skills 目录下的所有技能
+  SKILLS_LIST=$(curl -fsSL "${GITHUB_URL}/skills" 2>/dev/null | grep -oP 'href="\K[^"]*' | grep '^_' | grep -v '/$' || true)
+  
+  if [ -z "$SKILLS_LIST" ]; then
+    print_error "无法从远程获取技能列表"
+    rm -rf "$TMP_DIR"
+    exit 1
+  fi
+  
+  # 下载每个技能
+  for skill in $SKILLS_LIST; do
+    print_info "下载技能: $skill"
+    mkdir -p "$TMP_DIR/skills/$skill"
+    
+    # 下载 SKILL.md 和其他文件
+    curl -fsSL "${GITHUB_URL}/skills/$skill/SKILL.md" -o "$TMP_DIR/skills/$skill/SKILL.md" 2>/dev/null || {
+      print_error "下载 $skill/SKILL.md 失败"
+      rm -rf "$TMP_DIR"
+      exit 1
+    }
+    
+    # 复制子目录（references, scripts 等）
+    for subdir in references scripts assets; do
+      if curl -fsSL "${GITHUB_URL}/skills/$skill/$subdir/" 2>/dev/null | grep -q "href="; then
+        mkdir -p "$TMP_DIR/skills/$skill/$subdir"
+        # 这里需要递归下载，为简化起见，仅下载文件列表中的项
+        print_info "  - 包含 $subdir 子目录"
+      fi
+    done
+  done
+  
+  cp -r "$TMP_DIR/skills"/* "$TARGET_PROJECT/.copilot/skills/" || {
+    print_error "无法复制远程 skills 目录"
+    rm -rf "$TMP_DIR"
+    exit 1
+  }
+fi
+
 print_success "已复制 12 个技能文件"
 
 # 步骤 3：复制 constitution 目录
 echo ""
 echo "📖 复制进化宪法..."
-if [ -d "$TARGET_PROJECT/.copilot/skills/constitution" ]; then
-  rm -rf "$TARGET_PROJECT/.copilot/skills/constitution"
+
+if [ "$SKILLS_MODE" = "local" ]; then
+  if [ -d "$SKILLS_ROOT/constitution" ]; then
+    if [ -d "$TARGET_PROJECT/.copilot/skills/constitution" ]; then
+      rm -rf "$TARGET_PROJECT/.copilot/skills/constitution"
+    fi
+    cp -r "$SKILLS_ROOT/constitution" "$TARGET_PROJECT/.copilot/skills/" || {
+      print_error "无法复制本地 constitution 目录"
+      [ -n "$TMP_DIR" ] && rm -rf "$TMP_DIR"
+      exit 1
+    }
+  else
+    print_info "本地源中不存在 constitution 目录"
+  fi
+else
+  # 从远程下载 constitution
+  print_info "从远程下载 constitution..."
+  mkdir -p "$TMP_DIR/constitution"
+  
+  curl -fsSL "${GITHUB_URL}/constitution/ai-evolution-constitution.md" -o "$TMP_DIR/constitution/ai-evolution-constitution.md" 2>/dev/null || {
+    print_error "下载 constitution/ai-evolution-constitution.md 失败"
+    rm -rf "$TMP_DIR"
+    exit 1
+  }
+  
+  if [ -d "$TARGET_PROJECT/.copilot/skills/constitution" ]; then
+    rm -rf "$TARGET_PROJECT/.copilot/skills/constitution"
+  fi
+  
+  cp -r "$TMP_DIR/constitution" "$TARGET_PROJECT/.copilot/skills/" || {
+    print_error "无法复制远程 constitution 目录"
+    rm -rf "$TMP_DIR"
+    exit 1
+  }
 fi
 
-cp -r "$SKILLS_ROOT/constitution" "$TARGET_PROJECT/.copilot/skills/"
 print_success "已复制进化宪法"
+
+# 清理临时目录
+if [ -n "$TMP_DIR" ]; then
+  rm -rf "$TMP_DIR"
+  print_info "已清理临时目录"
+fi
 
 # 步骤 4：复制 templates（如果需要）
 echo ""
 echo "📋 复制模板..."
-if [ -d "$SKILLS_ROOT/templates" ] && [ "$(ls -A "$SKILLS_ROOT/templates")" ]; then
-  mkdir -p "$TARGET_PROJECT/.copilot/skills/templates"
-  cp -r "$SKILLS_ROOT/templates"/* "$TARGET_PROJECT/.copilot/skills/templates/" 2>/dev/null || true
-  print_success "已复制模板文件"
+
+if [ "$SKILLS_MODE" = "local" ]; then
+  if [ -d "$SKILLS_ROOT/templates" ] && [ "$(ls -A "$SKILLS_ROOT/templates")" ]; then
+    mkdir -p "$TARGET_PROJECT/.copilot/skills/templates"
+    cp -r "$SKILLS_ROOT/templates"/* "$TARGET_PROJECT/.copilot/skills/templates/" 2>/dev/null || true
+    print_success "已复制模板文件"
+  else
+    print_info "暂无模板文件"
+  fi
 else
-  print_info "暂无模板文件"
+  print_info "暂无模板文件（远程模式）"
 fi
 
 # 步骤 5：处理 copilot-instructions.md
@@ -184,6 +350,14 @@ echo "📋 创建集成信息..."
 
 INTEGRATION_INFO_FILE="$TARGET_PROJECT/.github/SKILLS_INTEGRATION_INFO.md"
 
+# 获取版本号
+if [ "$SKILLS_MODE" = "local" ] && [ -f "$SKILLS_ROOT/version.txt" ]; then
+  VERSION=$(cat "$SKILLS_ROOT/version.txt")
+else
+  # 尝试从远程获取版本
+  VERSION=$(curl -fsSL "${GITHUB_URL}/version.txt" 2>/dev/null || echo "unknown")
+fi
+
 cat > "$INTEGRATION_INFO_FILE" << INTEGRATION_INFO_TEMPLATE
 # 技能库集成信息
 
@@ -192,9 +366,10 @@ cat > "$INTEGRATION_INFO_FILE" << INTEGRATION_INFO_TEMPLATE
 ## 集成信息
 
 - **集成日期**: $(date '+%Y-%m-%d %H:%M:%S')
-- **版本号**: $(cat "$SKILLS_ROOT/version.txt")
+- **版本号**: $VERSION
 - **技能数量**: 12 个自定义技能
 - **位置**: \`.copilot/skills/\`
+- **源**: $SOURCE
 
 ## 集成内容
 
