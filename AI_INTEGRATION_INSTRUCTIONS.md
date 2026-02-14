@@ -13,7 +13,7 @@
    - `constitution/` → 用户项目的 `.evolution-skills/constitution/`
 
 2. **更新或创建用户项目的 `copilot-instructions.md`**
-   - 通过 `<attachment>` 标签引用进化宪法
+   - 在 Part 1 添加“强制读取宪法”的 Markdown 链接
    - 保留或新增 Part 2（项目特定规范）
    - 保留或新增 Part 3（技能库说明）
 
@@ -45,7 +45,7 @@ bash scripts/integrate-to-project.sh /path/to/user-project
 - ✅ 创建 `.evolution-skills/` 目录结构
 - ✅ 复制 `skills/` 和 `constitution/` 目录
 - ✅ 生成或更新 `copilot-instructions.md`
-- ✅ 添加 attachment 引用
+- ✅ 添加宪法链接（指向 `../.evolution-skills/constitution/ai-evolution-constitution.md`）
 - ✅ 创建 `.github/SKILLS_INTEGRATION_INFO.md`
 - ✅ 如果是 Git 项目，自动提交
 - ✅ 返回成功状态
@@ -57,7 +57,7 @@ bash scripts/verify-integration.sh /path/to/user-project
 
 **验证脚本的职责**：
 - ✅ 检查所有技能文件完整性
-- ✅ 验证 attachment 引用正确
+- ✅ 验证宪法链接正确
 - ✅ 检查 Markdown 语法
 - ✅ 生成详细的验证报告
 
@@ -78,7 +78,7 @@ bash scripts/verify-integration.sh /path/to/user-project
 └── README.md           (使用说明)
 
 .github/
-├── copilot-instructions.md      (已更新，含 attachment 引用)
+├── copilot-instructions.md      (已更新，含宪法链接)
 └── SKILLS_INTEGRATION_INFO.md   (集成信息)
 
 所有验证通过，项目已就绪使用所有技能！
@@ -117,7 +117,7 @@ bash scripts/integrate-to-project.sh /path/to/user-project [--auto-commit]
 
 4. **处理 copilot-instructions.md**
    - 如果文件不存在，使用模板创建
-   - 如果存在，检查是否有 `<attachment filePath=".evolution-skills/constitution/ai-evolution-constitution.md">`
+   - 如果存在，检查是否有 `../.evolution-skills/constitution/ai-evolution-constitution.md` 的链接
    - 如果缺失，在 Part 1 后添加
    - 保留用户的 Part 2 和 Part 3
 
@@ -172,7 +172,7 @@ bash scripts/verify-integration.sh /path/to/user-project [--verbose]
 1. ✅ 技能文件完整性（检查 12 个 SKILL.md）
 2. ✅ 目录结构（`.evolution-skills/` 存在且包含正确子目录）
 3. ✅ 进化宪法存在和可读
-4. ✅ copilot-instructions.md 语法和 attachment 引用
+4. ✅ copilot-instructions.md 语法和宪法链接
 5. ✅ SKILLS_INTEGRATION_INFO.md 存在
 6. ✅ 没有冲突或重复文件
 
@@ -191,7 +191,7 @@ bash scripts/verify-integration.sh /path/to/user-project [--verbose]
 ✅ copilot-instructions.md 验证
    └─ 文件存在且可读
    └─ Markdown 语法正确
-   └─ attachment 引用正确
+   └─ 宪法链接正确
 
 ✅ 集成信息验证
    └─ SKILLS_INTEGRATION_INFO.md 存在
@@ -216,7 +216,7 @@ user-project/
 │       └── constitution/
 │           └── ai-evolution-constitution.md
 ├── .github/
-│   ├── copilot-instructions.md              (已更新，含 attachment 引用)
+│   ├── copilot-instructions.md              (已更新，含宪法链接)
 │   └── SKILLS_INTEGRATION_INFO.md           (集成信息和说明)
 ├── README.md                                (用户项目的 README，不变)
 └── ... (用户项目的其他文件)
@@ -226,7 +226,7 @@ user-project/
 
 - **.evolution-skills/skills/** - 12 个自定义技能，用户的 AI 可以直接使用
 - **.evolution-skills/constitution/** - 通用进化宪法，所有项目共享
-- **.github/copilot-instructions.md** - 项目指令文件，通过 attachment 引用进化宪法
+- **.github/copilot-instructions.md** - 项目指令文件，通过宪法链接引用进化宪法
 - **.github/SKILLS_INTEGRATION_INFO.md** - 集成信息（何时集成、版本号、更新方法等）
 
 ---

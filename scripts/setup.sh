@@ -95,11 +95,10 @@ if [ ! -f "$INSTRUCTIONS_FILE" ]; then
     '' \
     '# 项目指令' \
     '' \
-    '## Part 1: 通用框架 - AI 系统进化宪法' \
+    '## Part 1: 强制执行' \
     '' \
-    '<attachment filePath=".evolution-skills/constitution/ai-evolution-constitution.md">' \
-    '此部分包含了 AI 助手的通用进化框架。详见上述文件。该内容与具体项目无关，可独立维护和在多个项目中共享。' \
-    '</attachment>' \
+    '**⚠️ 在开始任何工作前，必须读取并完全理解执行**：' \
+    '[../.evolution-skills/constitution/ai-evolution-constitution.md](../.evolution-skills/constitution/ai-evolution-constitution.md)' \
     '' \
     '## Part 2: 项目特定规范' \
     '' \
@@ -120,12 +119,13 @@ else
   # 检查并修正宪法引用路径
   if grep -q "ai-evolution-constitution.md" "$INSTRUCTIONS_FILE"; then
     # 检查路径是否正确
-    if ! grep -q ".evolution-skills/constitution/ai-evolution-constitution.md" "$INSTRUCTIONS_FILE"; then
+    if ! grep -q "\.\./\.evolution-skills/constitution/ai-evolution-constitution.md" "$INSTRUCTIONS_FILE"; then
       print_info "检测到宪法引用路径错误，正在修正..."
       # 修正各种可能的错误路径格式
-      sed -i.bak 's|\.github/ai-evolution-constitution\.md|.evolution-skills/constitution/ai-evolution-constitution.md|g' "$INSTRUCTIONS_FILE"
-      sed -i.bak 's|\.copilot[^"]*ai-evolution-constitution\.md|.evolution-skills/constitution/ai-evolution-constitution.md|g' "$INSTRUCTIONS_FILE"
-      sed -i.bak 's|\.evolution-skills/ai-evolution-constitution\.md|.evolution-skills/constitution/ai-evolution-constitution.md|g' "$INSTRUCTIONS_FILE"
+      sed -i.bak 's|\.github/ai-evolution-constitution\.md|../.evolution-skills/constitution/ai-evolution-constitution.md|g' "$INSTRUCTIONS_FILE"
+      sed -i.bak 's|\.copilot[^"]*ai-evolution-constitution\.md|../.evolution-skills/constitution/ai-evolution-constitution.md|g' "$INSTRUCTIONS_FILE"
+      sed -i.bak 's|\.evolution-skills/ai-evolution-constitution\.md|../.evolution-skills/constitution/ai-evolution-constitution.md|g' "$INSTRUCTIONS_FILE"
+      sed -i.bak 's|\.evolution-skills/constitution/ai-evolution-constitution\.md|../.evolution-skills/constitution/ai-evolution-constitution.md|g' "$INSTRUCTIONS_FILE"
       rm -f "$INSTRUCTIONS_FILE.bak"
       print_success "已修正宪法引用路径"
     else
@@ -134,9 +134,8 @@ else
   else
     print_info "⚠️  建议在 .github/copilot-instructions.md 的 Part 1 中添加进化宪法引用："
     echo ""
-    echo "  <attachment filePath=\".\evolution-skills/constitution/ai-evolution-constitution.md\">"
-    echo "  此部分包含了 AI 助手的通用进化框架。详见上述文件。"
-    echo "  </attachment>"
+    echo "  **⚠️ 在开始任何工作前，必须读取并完全理解执行**："
+    echo "  [../.evolution-skills/constitution/ai-evolution-constitution.md](../.evolution-skills/constitution/ai-evolution-constitution.md)"
     echo ""
   fi
 

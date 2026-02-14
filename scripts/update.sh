@@ -105,8 +105,35 @@ fi
 
 cd ..
 
+print_step "第3.5步：检查并修正 copilot-instructions.md"
+INSTRUCTIONS_FILE=".github/copilot-instructions.md"
+
+if [ -f "$INSTRUCTIONS_FILE" ]; then
+  if grep -q "ai-evolution-constitution.md" "$INSTRUCTIONS_FILE"; then
+    if ! grep -q "\.\./\.evolution-skills/constitution/ai-evolution-constitution.md" "$INSTRUCTIONS_FILE"; then
+      print_info "检测到宪法引用路径错误，正在修正..."
+      sed -i.bak 's|\.github/ai-evolution-constitution\.md|../.evolution-skills/constitution/ai-evolution-constitution.md|g' "$INSTRUCTIONS_FILE"
+      sed -i.bak 's|\.copilot[^"]*ai-evolution-constitution\.md|../.evolution-skills/constitution/ai-evolution-constitution.md|g' "$INSTRUCTIONS_FILE"
+      sed -i.bak 's|\.evolution-skills/ai-evolution-constitution\.md|../.evolution-skills/constitution/ai-evolution-constitution.md|g' "$INSTRUCTIONS_FILE"
+      sed -i.bak 's|\.evolution-skills/constitution/ai-evolution-constitution\.md|../.evolution-skills/constitution/ai-evolution-constitution.md|g' "$INSTRUCTIONS_FILE"
+      rm -f "$INSTRUCTIONS_FILE.bak"
+      print_success "已修正宪法引用路径"
+    else
+      print_info "宪法引用路径正确"
+    fi
+  else
+    print_info "⚠️  建议在 .github/copilot-instructions.md 的 Part 1 中添加进化宪法引用："
+    echo ""
+    echo "  **⚠️ 在开始任何工作前，必须读取并完全理解执行**："
+    echo "  [../.evolution-skills/constitution/ai-evolution-constitution.md](../.evolution-skills/constitution/ai-evolution-constitution.md)"
+    echo ""
+  fi
+else
+  print_info "未找到 .github/copilot-instructions.md，跳过路径修正"
+fi
+
 print_step "第4步：提交更新"
-git add .evolution-skills
+git add .evolution-skills .github/copilot-instructions.md
 git commit -m "chore: 更新 copilot-evolution-skills 到 $LATEST_VERSION"
 
 if [ "$STASHED" = true ]; then
