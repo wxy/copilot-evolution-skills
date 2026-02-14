@@ -40,8 +40,8 @@ if [ ! -d ".git" ]; then
   exit 1
 fi
 
-# 检查 submodule 是否存在
-if [ ! -d ".copilot/skills/.git" ]; then
+# 检查 submodule 是否存在（.git 可能是文件或目录）
+if [ ! -e ".copilot/skills/.git" ]; then
   print_error "未找到技能库 submodule"
   echo "请先运行 setup.sh 集成技能库"
   exit 1
