@@ -95,11 +95,16 @@ print_step "第2步：创建贡献分支"
 BRANCH_NAME="contrib/$(date +%Y%m%d-%H%M%S)"
 git checkout -b "$BRANCH_NAME"
 
-print_step "第3步：提交改动"
-echo ""
-read -p "请输入提交说明: " COMMIT_MSG
-git add .
-git commit -m "$COMMIT_MSG"
+# 如果有未提交的改动，需要先提交
+if [ "$HAS_UNCOMMITTED" = true ]; then
+  print_step "第3步：提交改动"
+  echo ""
+  read -p "请输入提交说明: " COMMIT_MSG
+  git add .
+  git commit -m "$COMMIT_MSG"
+else
+  print_info "改动已提交，跳过提交步骤"
+fi
 
 print_step "第4步：推送分支"
 # Fork 并推送
