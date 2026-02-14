@@ -65,11 +65,7 @@ fi
 mkdir -p "$(dirname "$SPARSE_CHECKOUT_FILE")"
 
 # 创建稀疏检出配置
-cat > "$SPARSE_CHECKOUT_FILE" << 'SPARSE_CONFIG'
-skills/
-constitution/
-version.txt
-SPARSE_CONFIG
+printf "skills/\nconstitution/\nversion.txt\n" > "$SPARSE_CHECKOUT_FILE"
 
 # 应用稀疏检出
 git read-tree -mu HEAD
@@ -86,30 +82,30 @@ if [ ! -f "$INSTRUCTIONS_FILE" ]; then
   print_info "创建新的 copilot-instructions.md"
   mkdir -p .github
   
-  cat > "$INSTRUCTIONS_FILE" << 'INSTRUCTIONS'
----
-applyTo: "**"
----
-
-# 项目指令
-
-## Part 1: 通用框架 - AI 系统进化宪法
-
-<attachment filePath=".copilot/skills/constitution/ai-evolution-constitution.md">
-此部分包含了 AI 助手的通用进化框架。详见上述文件。该内容与具体项目无关，可独立维护和在多个项目中共享。
-</attachment>
-
-## Part 2: 项目特定规范
-
-（此部分请根据你的项目需要补充）
-
-## Part 3: 技能库说明
-
-此项目已集成 copilot-evolution-skills（通用 AI 助手技能库）。
-
-技能位置：`.copilot/skills/`
-
-INSTRUCTIONS
+  printf '%s\n' \
+    '---' \
+    'applyTo: "**"' \
+    '---' \
+    '' \
+    '# 项目指令' \
+    '' \
+    '## Part 1: 通用框架 - AI 系统进化宪法' \
+    '' \
+    '<attachment filePath=".copilot/skills/constitution/ai-evolution-constitution.md">' \
+    '此部分包含了 AI 助手的通用进化框架。详见上述文件。该内容与具体项目无关，可独立维护和在多个项目中共享。' \
+    '</attachment>' \
+    '' \
+    '## Part 2: 项目特定规范' \
+    '' \
+    '（此部分请根据你的项目需要补充）' \
+    '' \
+    '## Part 3: 技能库说明' \
+    '' \
+    '此项目已集成 copilot-evolution-skills（通用 AI 助手技能库）。' \
+    '' \
+    '技能位置：`.copilot/skills/`' \
+    '' \
+    > "$INSTRUCTIONS_FILE"
 
   print_success "已创建 copilot-instructions.md"
 else
@@ -124,6 +120,53 @@ else
     echo "  </attachment>"
     echo ""
   fi
+fi
+
+echo ""
+print_step "第3.5步：更新 AGENTS.md（如果存在）"
+
+if [ -f "AGENTS.md" ]; then
+  if grep -q "<!-- PROJECT_SKILLS_START -->" AGENTS.md; then
+    print_info "检测到 AGENTS.md，正在更新技能引用..."
+
+    SKILLS_CONTENT_FILE=$(mktemp)
+    printf '%s\n' \
+      '<!-- 项目自定义技能现在从远程 GitHub 仓库集成: https://github.com/wxy/copilot-evolution-skills -->' \
+      '<!-- 可进化技能已移至独立项目，通过远程脚本进行管理 -->' \
+      '' \
+      '<project_skills>' \
+      > "$SKILLS_CONTENT_FILE"
+
+    for skill_dir in .copilot/skills/skills/_*; do
+      if [ -d "$skill_dir" ]; then
+        skill_name=$(basename "$skill_dir")
+        skill_file="$skill_dir/SKILL.md"
+        if [ -f "$skill_file" ]; then
+          description=$(grep -m 1 -E '^description:' "$skill_file" | sed 's/^description:[[:space:]]*//')
+          if [ -z "$description" ]; then
+            description=$(grep -A 2 '^## 概述' "$skill_file" | tail -n 1 | sed 's/^[[:space:]]*//')
+          fi
+          [ -z "$description" ] && description="可进化技能"
+
+          printf '<skill>\n<name>%s</name>\n<description>%s</description>\n<file>.copilot/skills/skills/%s/SKILL.md</file>\n</skill>\n\n' \
+            "$skill_name" "$description" "$skill_name" \
+            >> "$SKILLS_CONTENT_FILE"
+        fi
+      fi
+    done
+
+    printf '%s\n' '</project_skills>' >> "$SKILLS_CONTENT_FILE"
+
+    SKILLS_CONTENT_FILE="$SKILLS_CONTENT_FILE" \
+    python -c 'import os,re,pathlib; path=pathlib.Path("AGENTS.md"); data=path.read_text(); start="<!-- PROJECT_SKILLS_START -->"; end="<!-- PROJECT_SKILLS_END -->"; content=pathlib.Path(os.environ["SKILLS_CONTENT_FILE"]).read_text(); pattern=re.compile(re.escape(start)+r".*?"+re.escape(end), re.S); new=start+"\n"+content+"\n"+end; path.write_text(pattern.sub(new, data))'
+
+    rm "$SKILLS_CONTENT_FILE"
+    print_success "已更新 AGENTS.md"
+  else
+    print_info "AGENTS.md 没有 PROJECT_SKILLS 标记，跳过更新"
+  fi
+else
+  print_info "未找到 AGENTS.md 文件，跳过更新"
 fi
 
 echo ""

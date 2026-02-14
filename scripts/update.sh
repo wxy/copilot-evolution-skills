@@ -105,6 +105,53 @@ fi
 
 cd ../..
 
+print_step "第3.5步：更新 AGENTS.md（如果存在）"
+
+if [ -f "AGENTS.md" ]; then
+  if grep -q "<!-- PROJECT_SKILLS_START -->" AGENTS.md; then
+    print_info "检测到 AGENTS.md，正在更新技能引用..."
+
+    SKILLS_CONTENT_FILE=$(mktemp)
+    printf '%s\n' \
+      '<!-- 项目自定义技能现在从远程 GitHub 仓库集成: https://github.com/wxy/copilot-evolution-skills -->' \
+      '<!-- 可进化技能已移至独立项目，通过远程脚本进行管理 -->' \
+      '' \
+      '<project_skills>' \
+      > "$SKILLS_CONTENT_FILE"
+
+    for skill_dir in .copilot/skills/skills/_*; do
+      if [ -d "$skill_dir" ]; then
+        skill_name=$(basename "$skill_dir")
+        skill_file="$skill_dir/SKILL.md"
+        if [ -f "$skill_file" ]; then
+          description=$(grep -m 1 -E '^description:' "$skill_file" | sed 's/^description:[[:space:]]*//')
+          if [ -z "$description" ]; then
+            description=$(grep -A 2 '^## 概述' "$skill_file" | tail -n 1 | sed 's/^[[:space:]]*//')
+          fi
+          [ -z "$description" ] && description="可进化技能"
+
+          printf '<skill>\n<name>%s</name>\n<description>%s</description>\n<file>.copilot/skills/skills/%s/SKILL.md</file>\n</skill>\n\n' \
+            "$skill_name" "$description" "$skill_name" \
+            >> "$SKILLS_CONTENT_FILE"
+        fi
+      fi
+    done
+
+    printf '%s\n' '</project_skills>' >> "$SKILLS_CONTENT_FILE"
+
+    SKILLS_CONTENT_FILE="$SKILLS_CONTENT_FILE" \
+    python -c 'import os,re,pathlib; path=pathlib.Path("AGENTS.md"); data=path.read_text(); start="<!-- PROJECT_SKILLS_START -->"; end="<!-- PROJECT_SKILLS_END -->"; content=pathlib.Path(os.environ["SKILLS_CONTENT_FILE"]).read_text(); pattern=re.compile(re.escape(start)+r".*?"+re.escape(end), re.S); new=start+"\n"+content+"\n"+end; path.write_text(pattern.sub(new, data))'
+
+    rm "$SKILLS_CONTENT_FILE"
+    print_success "已更新 AGENTS.md"
+  else
+    print_info "AGENTS.md 没有 PROJECT_SKILLS 标记，跳过更新"
+  fi
+else
+  print_info "未找到 AGENTS.md 文件，跳过更新"
+fi
+
+echo ""
 print_step "第4步：提交更新"
 git add .copilot/skills
 git commit -m "chore: 更新 copilot-evolution-skills 到 $LATEST_VERSION"
