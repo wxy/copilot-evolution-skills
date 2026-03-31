@@ -1,5 +1,5 @@
 ---
-name: _evolution-core
+name: evolution-core
 description: Evolution capability meta-skill. Identifies evolutionary scenarios (repeated errors, user feedback, complex workflows) and crystallizes experience into reusable skills or instruction updates.
 ---
 
@@ -59,9 +59,12 @@ When **Skill Failure** is triggered, the following remedial actions must be exec
 - [ ] Has post-verification been completed?
 
 ## 💡 Naming Conventions (Recommended)
-- **Project custom skills** should uniformly use the `_` prefix, e.g., `_evolution-core`.
-- Prefix is used to distinguish from official skills.
-- If categorization by domain is needed, unified prefix strategies like `_evo-`, `_proj-` can be used.
+- **Skill directories** should uniformly use the `_` prefix, e.g., `.agent/skills/_evolution-core/`.
+- The `_` directory prefix distinguishes evoskills from other skill sources and prevents directory name collisions.
+- The `name:` field in `SKILL.md` should **not** include `_`, e.g., `name: evolution-core`.
+  - This avoids VS Code validation errors (only lowercase letters, numbers, and hyphens are allowed in `name:`).
+  - Directory name and `name:` field intentionally differ — directory controls filesystem isolation, `name:` controls VS Code registration.
+- If categorization by domain is needed, subdirectory grouping or unified prefix strategies like `evo-`, `proj-` can be used in the `name:` field.
 
 ## 📝 Examples
 

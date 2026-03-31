@@ -36,6 +36,20 @@ evoskills --help
 npx @xingyu.wang/evoskills init
 ```
 
+### Option 3: AI Integration (One-sentence setup)
+
+Tell your AI assistant (e.g., GitHub Copilot) directly:
+
+> Please integrate the skills from https://github.com/wxy/evoskills into this project.
+
+The AI will read this README, understand the skill system, and execute the setup via the CLI:
+
+```bash
+npx @xingyu.wang/evoskills init
+```
+
+This works with any AI assistant that can browse GitHub URLs. The CLI handles all file placement, registry generation, and content protection — direct file copying is not supported and will result in an incomplete setup.
+
 ## 🚀 Quick Start
 
 Initialize evoskills in your project:

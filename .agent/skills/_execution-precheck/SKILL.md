@@ -1,5 +1,5 @@
 ---
-name: _execution-precheck
+name: execution-precheck
 description: 执行前检查清单。每次回复前必须自动进行的自我检查，确保没有遗漏强制规则。
 ---
 

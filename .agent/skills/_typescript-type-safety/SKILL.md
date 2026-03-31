@@ -1,5 +1,5 @@
 ---
-name: _typescript-type-safety
+name: typescript-type-safety
 description: Enforce TypeScript type safety guidelines. Ensures proper typing, prevents type-related runtime errors. Focuses on mock data creation, enum handling, and complex type initialization.
 ---
 

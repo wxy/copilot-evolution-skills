@@ -1,5 +1,5 @@
 ---
-name: _pr-creator
+name: pr-creator
 description: Automate PR generation with version detection and release notes. Streamlines contribution workflow and version management. Creates professional PR descriptions with checklist and automation templates.
 ---
 
