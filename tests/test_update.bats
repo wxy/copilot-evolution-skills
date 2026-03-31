@@ -25,6 +25,13 @@ teardown() {
   [ $status -eq 0 ]
 }
 
+@test "update does not auto-install CLI" {
+  run bash -c "cd '$TEST_DIR' && '$EVOSKILLS_CMD' update 2>&1"
+  [ $status -eq 0 ]
+
+  [[ "$output" != *"Updating evoskills CLI"* ]]
+}
+
 @test "update unconditionally refreshes constitution file" {
   # Modify the constitution file
   echo "MODIFIED" > "$TEST_DIR/.github/AI_CONSTITUTION.md"
@@ -57,19 +64,30 @@ teardown() {
   grep -q "Initialization Protocol" "$TEST_DIR/.github/AI_INITIALIZATION.md"
 }
 
+@test "update restores initialization file when remote is unavailable and local file is empty" {
+  # Simulate corrupted local file
+  : > "$TEST_DIR/.github/AI_INITIALIZATION.md"
+
+  # Set invalid repo to force remote fetch failure
+  run bash -c "cd '$TEST_DIR' && '$EVOSKILLS_CMD' update --repo 'https://github.com/invalid/does-not-exist' 2>&1"
+  # Command may fail later when refreshing skills from invalid repo, but recovery should still happen
+
+  # Should be recovered from bundled template and remain non-empty
+  [ -s "$TEST_DIR/.github/AI_INITIALIZATION.md" ]
+  grep -q "Required Initialization Protocol" "$TEST_DIR/.github/AI_INITIALIZATION.md"
+}
+
 @test "update refreshes all installed skills" {
-  # Install a skill
-  bash -c "cd '$TEST_DIR' && '$EVOSKILLS_CMD' install _git-commit" > /dev/null 2>&1
-  
-  # Remove it manually to simulate outdated installation
-  rm -rf "$TEST_DIR/.agent/skills/_git-commit"
+  # Modify an already-installed core skill to simulate outdated installation
+  echo "MODIFIED" > "$TEST_DIR/.agent/skills/_evolution-core/SKILL.md"
   
   # Run update
   run bash -c "cd '$TEST_DIR' && '$EVOSKILLS_CMD' update 2>&1"
   [ $status -eq 0 ]
   
-  # Skill should be reinstalled
-  [ -d "$TEST_DIR/.agent/skills/_git-commit" ]
+  # Skill file should be refreshed from remote
+  [ -f "$TEST_DIR/.agent/skills/_evolution-core/SKILL.md" ]
+  ! grep -q "^MODIFIED$" "$TEST_DIR/.agent/skills/_evolution-core/SKILL.md"
 }
 
 @test "update with skill parameter updates only that skill" {
