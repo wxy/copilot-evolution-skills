@@ -74,6 +74,10 @@ This will:
   - Core (2): evolution infrastructure
   - Required System (4): safety/runtime baseline (enforced by initialization protocol)
   - Optional (8): user-selectable workflow enhancements
+4. **Framework Files Management** - Dynamic and user-maintained files with protection:
+  - Framework files (`.github/AI_CONSTITUTION.md`, `.github/AI_INITIALIZATION.md`) are auto-generated for external projects
+  - `AGENTS.md` is protected: auto-generated in external projects, user-maintained in evoskills repository
+  - The CLI detects when running on itself and skips auto-updates to prevent overwriting user customizations
 
 ## 📚 Usage
 
@@ -100,11 +104,18 @@ evoskills install _git-commit    # Install a skill
 evoskills remove _git-commit     # Remove a skill
 ```
 
-### Update Skills and CLI
+### Update Skills
 
 ```bash
-evoskills update                 # Update CLI (via npm) and refresh all installed skills
+evoskills update                 # Refresh all installed skills and framework files
 evoskills update _git-commit     # Update specific skill only
+```
+
+`evoskills update` will check for a newer CLI version and print a prompt, but it will not auto-install.
+To update CLI explicitly:
+
+```bash
+npm install -g @xingyu.wang/evoskills@latest
 ```
 
 ### npm Release Authentication (GitHub Actions)

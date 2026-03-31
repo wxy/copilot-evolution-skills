@@ -3,7 +3,7 @@
 set -e
 
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-CLI_VERSION="3.1.0"
+CLI_VERSION="3.1.1"
 
 # Project config file (in current directory)
 PROJECT_CONFIG_FILE=".evoskills-config.json"
@@ -67,7 +67,7 @@ Commands:
   install <skill>             Install a skill from configured repository
   add <skill>                 Alias of install
   remove <skill>              Remove a skill
-  update [OPTIONS]            Update CLI and refresh skills/constitution
+  update [OPTIONS]            Refresh skills and framework files
     --repo <url>              Switch to a different skill repository
     [skill]                   Update specific skill only (omit to update all)
   contribute <skill>          Start contribution flow for a skill
@@ -79,7 +79,8 @@ Default repository: https://github.com/wxy/evoskills
 Notes:
   - Skills are installed to .agent/skills/
   - Repository URL is auto-saved in .evoskills-config.json when using --repo
-  - 'update' without args refreshes CLI (via npm) and all skills from saved repo
+  - 'update' refreshes framework files and installed skills from saved repo
+  - CLI updates are check-only prompts during update (no auto npm install)
   - AGENTS.md is auto-generated for openskills compatibility
   - Skill tiers: Core (2), Required System (4), Optional (8)
 EOF
@@ -88,6 +89,14 @@ EOF
 ensure_layout() {
   mkdir -p "$SKILLS_DIR"
   mkdir -p ".github"
+}
+
+is_evoskills_repo() {
+  # Check if this is the evoskills project itself
+  if [ -f "package.json" ] && grep -q '"name".*"evoskills"' package.json; then
+    return 0
+  fi
+  return 1
 }
 
 github_raw_url() {
@@ -176,10 +185,7 @@ github_download() {
 
 create_constitution_if_missing() {
   if [ ! -f ".github/AI_CONSTITUTION.md" ]; then
-    local skills_repo
-    skills_repo=$(get_config_value "skillsRepo")
-    github_download "$skills_repo" ".github/AI_CONSTITUTION.md" ".github/AI_CONSTITUTION.md" "true"
-    if [ $? -ne 0 ]; then
+    if ! update_constitution; then
       print_error "AI_CONSTITUTION.md is required for initialization"
       exit 1
     fi
@@ -188,10 +194,7 @@ create_constitution_if_missing() {
 
 create_initialization_if_missing() {
   if [ ! -f ".github/AI_INITIALIZATION.md" ]; then
-    local skills_repo
-    skills_repo=$(get_config_value "skillsRepo")
-    github_download "$skills_repo" ".github/AI_INITIALIZATION.md" ".github/AI_INITIALIZATION.md" "true"
-    if [ $? -ne 0 ]; then
+    if ! update_initialization; then
       print_error "AI_INITIALIZATION.md is required for initialization"
       exit 1
     fi
@@ -200,32 +203,70 @@ create_initialization_if_missing() {
 
 update_constitution() {
   local skills_repo
-  skills_repo=$(get_config_value "skillsRepo")
   local raw_url
+  local temp_file
+  local target_file=".github/AI_CONSTITUTION.md"
+  local bundled_file="$SCRIPT_DIR/.github/AI_CONSTITUTION.md"
+
+  skills_repo=$(get_config_value "skillsRepo")
   raw_url=$(github_raw_url "$skills_repo" ".github/AI_CONSTITUTION.md")
-  
-  if curl -sf "$raw_url" > ".github/AI_CONSTITUTION.md" 2>/dev/null; then
-    print_success "Updated .github/AI_CONSTITUTION.md"
+  temp_file=$(mktemp)
+
+  if curl -sfL "$raw_url" > "$temp_file" 2>/dev/null && [ -s "$temp_file" ]; then
+    mv "$temp_file" "$target_file"
+    print_success "Updated $target_file"
     return 0
-  else
-    print_warn "Could not update .github/AI_CONSTITUTION.md from remote"
+  fi
+
+  rm -f "$temp_file"
+
+  if [ -s "$target_file" ]; then
+    print_warn "Could not update $target_file from remote; keeping local file"
     return 1
   fi
+
+  if [ -s "$bundled_file" ]; then
+    cp "$bundled_file" "$target_file"
+    print_warn "Remote unavailable; restored $target_file from local template"
+    return 0
+  fi
+
+  print_warn "Could not update $target_file from remote and no local template found"
+  return 1
 }
 
 update_initialization() {
   local skills_repo
-  skills_repo=$(get_config_value "skillsRepo")
   local raw_url
+  local temp_file
+  local target_file=".github/AI_INITIALIZATION.md"
+  local bundled_file="$SCRIPT_DIR/.github/AI_INITIALIZATION.md"
+
+  skills_repo=$(get_config_value "skillsRepo")
   raw_url=$(github_raw_url "$skills_repo" ".github/AI_INITIALIZATION.md")
-  
-  if curl -sf "$raw_url" > ".github/AI_INITIALIZATION.md" 2>/dev/null; then
-    print_success "Updated .github/AI_INITIALIZATION.md"
+  temp_file=$(mktemp)
+
+  if curl -sfL "$raw_url" > "$temp_file" 2>/dev/null && [ -s "$temp_file" ]; then
+    mv "$temp_file" "$target_file"
+    print_success "Updated $target_file"
     return 0
-  else
-    print_warn "Could not update .github/AI_INITIALIZATION.md from remote"
+  fi
+
+  rm -f "$temp_file"
+
+  if [ -s "$target_file" ]; then
+    print_warn "Could not update $target_file from remote; keeping local file"
     return 1
   fi
+
+  if [ -s "$bundled_file" ]; then
+    cp "$bundled_file" "$target_file"
+    print_warn "Remote unavailable; restored $target_file from local template"
+    return 0
+  fi
+
+  print_warn "Could not update $target_file from remote and no local template found"
+  return 1
 }
 
 create_copilot_instructions_if_missing() {
@@ -522,7 +563,7 @@ cmd_init() {
 
   cat > "$PROJECT_CONFIG_FILE" << EOF
 {
-  "version": "3.1.0",
+  "version": "$CLI_VERSION",
   "installedAt": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
   "skillsDir": ".agent/skills",
   "openskillsCompatible": true,
@@ -561,7 +602,10 @@ EOF
     fi
   fi
 
-  write_agents_registry
+  # Only update AGENTS.md if not in evoskills project itself
+  if ! is_evoskills_repo; then
+    write_agents_registry
+  fi
   print_success "Initialization complete (.agent/skills + AGENTS.md + AI_CONSTITUTION.md)"
 }
 
@@ -606,7 +650,10 @@ cmd_install() {
 
   ensure_layout
   install_skill_github "$skill"
-  write_agents_registry
+  # Only update AGENTS.md if not in evoskills project itself
+  if ! is_evoskills_repo; then
+    write_agents_registry
+  fi
 }
 
 cmd_remove() {
@@ -623,7 +670,10 @@ cmd_remove() {
   if [ -d "$SKILLS_DIR/$skill" ]; then
     rm -rf "$SKILLS_DIR/$skill"
     print_success "Removed skill: $skill"
-    write_agents_registry
+    # Only update AGENTS.md if not in evoskills project itself
+    if ! is_evoskills_repo; then
+      write_agents_registry
+    fi
   else
     print_warn "Skill is not installed: $skill"
   fi
@@ -649,19 +699,23 @@ cmd_update() {
     esac
   done
 
-  # Update CLI itself if no specific skill requested
+  # Explicit check-and-prompt for CLI update (no automatic npm install)
   if [ -z "$skill" ]; then
     if command -v npm &> /dev/null; then
-      print_info "Updating evoskills CLI..."
-      npm install -g @xingyu.wang/evoskills@latest 2>/dev/null || print_warn "CLI update failed (may need sudo or already latest)"
+      local latest_version
+      latest_version=$(npm view @xingyu.wang/evoskills version 2>/dev/null || true)
+      if [ -n "$latest_version" ] && [ "$latest_version" != "$CLI_VERSION" ]; then
+        print_warn "New evoskills CLI version available: $CLI_VERSION -> $latest_version"
+        print_info "Run: npm install -g @xingyu.wang/evoskills@latest"
+      fi
     else
-      print_warn "npm not found; skipping CLI update"
+      print_warn "npm not found; skipping CLI version check"
     fi
   fi
 
   ensure_layout
-  update_constitution
-  update_initialization
+  update_constitution || true
+  update_initialization || true
   create_copilot_instructions_if_missing
 
   if [ -n "$skill" ]; then
@@ -683,7 +737,11 @@ cmd_update() {
     fi
   fi
 
-  write_agents_registry
+  # Only update AGENTS.md if not in evoskills project itself
+  # (in evoskills, AGENTS.md is user-maintained version-controlled file)
+  if ! is_evoskills_repo; then
+    write_agents_registry
+  fi
   print_success "Update complete"
 }
 

@@ -6,12 +6,14 @@ source "$(dirname "$BATS_TEST_FILENAME")/test_helper.sh"
 
 @test "version flag shows current version" {
   output=$("$EVOSKILLS_CMD" --version 2>&1)
-  [[ "$output" == *"3.0.1"* ]]
+  expected_version=$(grep '^CLI_VERSION=' "$EVOSKILLS_CMD" | sed 's/CLI_VERSION="\(.*\)"/\1/')
+  [[ "$output" == *"$expected_version"* ]]
 }
 
 @test "version short flag -v shows current version" {
   output=$("$EVOSKILLS_CMD" -v 2>&1)
-  [[ "$output" == *"3.0.1"* ]]
+  expected_version=$(grep '^CLI_VERSION=' "$EVOSKILLS_CMD" | sed 's/CLI_VERSION="\(.*\)"/\1/')
+  [[ "$output" == *"$expected_version"* ]]
 }
 
 @test "help flag displays usage information" {
