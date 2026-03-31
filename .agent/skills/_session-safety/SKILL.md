@@ -1,5 +1,5 @@
 ---
-name: _session-safety
+name: session-safety
 description: 会话输出安全控制。防止超长输出导致失败，必要时分段写入文件。
 ---
 

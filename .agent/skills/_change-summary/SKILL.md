@@ -1,5 +1,5 @@
 ---
-name: _change-summary
+name: change-summary
 description: 自动汇总当前分支相对主分支的提交摘要，用于 PR/说明对齐。
 ---
 

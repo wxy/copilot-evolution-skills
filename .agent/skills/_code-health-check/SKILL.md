@@ -1,5 +1,5 @@
 ---
-name: _code-health-check
+name: code-health-check
 description: Perform code quality checks before commit. Validates code standards, security, architectural consistency. Runs TypeScript compilation, linting, test coverage verification.
 ---
 

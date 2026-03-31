@@ -1,5 +1,5 @@
 ---
-name: _release-process
+name: release-process
 description: Complete release workflow for project versioning. Covers branch creation, testing validation, documentation updates, PR creation via skills, and GitHub Release creation. Emphasizes stability through branch isolation strategy.
 ---
 

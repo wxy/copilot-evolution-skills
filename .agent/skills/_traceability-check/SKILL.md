@@ -1,5 +1,5 @@
 ---
-name: _traceability-check
+name: traceability-check
 description: 校验“说明内容 ↔ 实际变更文件”的一致性，避免描述遗漏或偏差。
 ---
 

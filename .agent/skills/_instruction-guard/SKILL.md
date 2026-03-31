@@ -1,5 +1,5 @@
 ---
-name: _instruction-guard
+name: instruction-guard
 description: 强制在每次回复前读取项目指令文件，避免遗漏规范。与 _context-ack 配合，仅负责“读取约束”，不负责输出格式。
 ---
 

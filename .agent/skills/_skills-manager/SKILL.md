@@ -1,5 +1,5 @@
 ---
-name: _skills-manager
+name: skills-manager
 description: Core skill manager for evoskills. Handles skill lifecycle (init, install, remove, update) and skill contributions.
 ---
 

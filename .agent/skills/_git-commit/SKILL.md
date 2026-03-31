@@ -1,5 +1,5 @@
 ---
-name: _git-commit
+name: git-commit
 description: Implements Conventional Commits workflow. Ensures proper commit message formatting with structured body, footer, and skill signature. Facilitates semantic versioning compliance and clean project history.
 ---
 
