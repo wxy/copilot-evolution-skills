@@ -3,7 +3,7 @@
 set -e
 
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-CLI_VERSION="3.1.2"
+CLI_VERSION="3.1.3"
 
 # Project config file (in current directory)
 PROJECT_CONFIG_FILE=".evoskills-config.json"
@@ -13,6 +13,10 @@ SKILLS_DIR="$AGENTS_DIR/skills"
 
 # Default skill repository
 DEFAULT_SKILLS_REPO="https://github.com/wxy/evoskills"
+
+REPO_SNAPSHOT_DIR=""
+REPO_SNAPSHOT_ROOT=""
+REPO_SNAPSHOT_REPO=""
 
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
@@ -47,6 +51,17 @@ print_success() { echo -e "${GREEN}✅ $*${NC}"; }
 print_info() { echo -e "${BLUE}ℹ️  $*${NC}"; }
 print_warn() { echo -e "${YELLOW}⚠️  $*${NC}"; }
 print_error() { echo -e "${RED}❌ $*${NC}"; }
+
+cleanup_repo_snapshot() {
+  if [ -n "$REPO_SNAPSHOT_DIR" ] && [ -d "$REPO_SNAPSHOT_DIR" ]; then
+    rm -rf "$REPO_SNAPSHOT_DIR"
+  fi
+  REPO_SNAPSHOT_DIR=""
+  REPO_SNAPSHOT_ROOT=""
+  REPO_SNAPSHOT_REPO=""
+}
+
+trap cleanup_repo_snapshot EXIT
 
 show_help() {
   cat << 'EOF'
@@ -106,6 +121,127 @@ github_raw_url() {
   local raw_repo
   raw_repo=$(echo "$repo_url" | sed 's|https://github.com/|https://raw.githubusercontent.com/|' | sed 's|\.git$||')
   echo "$raw_repo/main/$path"
+}
+
+github_archive_url() {
+  local repo_url="$1"
+  local archive_repo
+  archive_repo=$(echo "$repo_url" | sed 's|https://github.com/||' | sed 's|\.git$||')
+  echo "https://codeload.github.com/$archive_repo/tar.gz/refs/heads/main"
+}
+
+fingerprint_path() {
+  local target_path="$1"
+
+  if [ -f "$target_path" ]; then
+    cksum "$target_path" 2>/dev/null | awk '{print $1":"$2}'
+    return 0
+  fi
+
+  if [ -d "$target_path" ]; then
+    (
+      cd "$target_path" || exit 1
+      find . -type f | LC_ALL=C sort | while read -r file; do
+        cksum "$file" | awk -v name="$file" '{print name":"$1":"$2}'
+      done
+    ) | cksum | awk '{print $1":"$2}'
+    return 0
+  fi
+
+  echo "__missing__"
+}
+
+ensure_repo_snapshot() {
+  local skills_repo="$1"
+
+  if [ "$REPO_SNAPSHOT_REPO" = "$skills_repo" ] && [ -n "$REPO_SNAPSHOT_ROOT" ] && [ -d "$REPO_SNAPSHOT_ROOT" ]; then
+    return 0
+  fi
+
+  cleanup_repo_snapshot
+
+  local snapshot_dir archive_file extract_dir snapshot_root archive_url
+  snapshot_dir=$(mktemp -d)
+  archive_file="$snapshot_dir/repo.tar.gz"
+  extract_dir="$snapshot_dir/extract"
+  archive_url=$(github_archive_url "$skills_repo")
+
+  if ! curl -sfL "$archive_url" > "$archive_file" 2>/dev/null; then
+    rm -rf "$snapshot_dir"
+    return 1
+  fi
+
+  mkdir -p "$extract_dir"
+  if ! tar -xzf "$archive_file" -C "$extract_dir" 2>/dev/null; then
+    rm -rf "$snapshot_dir"
+    return 1
+  fi
+
+  snapshot_root=$(find "$extract_dir" -mindepth 1 -maxdepth 1 -type d | head -1)
+  if [ -z "$snapshot_root" ] || [ ! -d "$snapshot_root" ]; then
+    rm -rf "$snapshot_dir"
+    return 1
+  fi
+
+  REPO_SNAPSHOT_DIR="$snapshot_dir"
+  REPO_SNAPSHOT_ROOT="$snapshot_root"
+  REPO_SNAPSHOT_REPO="$skills_repo"
+  return 0
+}
+
+sync_file_if_changed() {
+  local source_file="$1"
+  local target_file="$2"
+  local label="$3"
+  local before after
+
+  if [ ! -f "$source_file" ]; then
+    return 1
+  fi
+
+  before=$(fingerprint_path "$target_file")
+  after=$(fingerprint_path "$source_file")
+
+  if [ "$before" = "$after" ]; then
+    print_info "Checked $label: no changes, skipped"
+    return 2
+  fi
+
+  mkdir -p "$(dirname "$target_file")"
+  cp "$source_file" "$target_file"
+  print_success "Checked $label: updated"
+  return 0
+}
+
+sync_directory_if_changed() {
+  local source_dir="$1"
+  local target_dir="$2"
+  local label="$3"
+  local before after staging_dir staged_target
+
+  if [ ! -d "$source_dir" ]; then
+    return 1
+  fi
+
+  before=$(fingerprint_path "$target_dir")
+  after=$(fingerprint_path "$source_dir")
+
+  if [ "$before" = "$after" ]; then
+    print_info "Checked $label: no changes, skipped"
+    return 2
+  fi
+
+  staging_dir=$(mktemp -d)
+  staged_target="$staging_dir/$(basename "$target_dir")"
+  cp -R "$source_dir" "$staged_target"
+
+  rm -rf "$target_dir"
+  mkdir -p "$(dirname "$target_dir")"
+  mv "$staged_target" "$target_dir"
+  rm -rf "$staging_dir"
+
+  print_success "Checked $label: updated"
+  return 0
 }
 
 get_config_value() {
@@ -203,69 +339,73 @@ create_initialization_if_missing() {
 
 update_constitution() {
   local skills_repo
-  local raw_url
-  local temp_file
+  local snapshot_root="$1"
   local target_file=".github/AI_CONSTITUTION.md"
   local bundled_file="$SCRIPT_DIR/.github/AI_CONSTITUTION.md"
 
-  skills_repo=$(get_config_value "skillsRepo")
-  raw_url=$(github_raw_url "$skills_repo" ".github/AI_CONSTITUTION.md")
-  temp_file=$(mktemp)
-
-  if curl -sfL "$raw_url" > "$temp_file" 2>/dev/null && [ -s "$temp_file" ]; then
-    mv "$temp_file" "$target_file"
-    print_success "Updated $target_file"
-    return 0
+  if [ -z "$snapshot_root" ]; then
+    skills_repo=$(get_config_value "skillsRepo")
+    if ensure_repo_snapshot "$skills_repo"; then
+      snapshot_root="$REPO_SNAPSHOT_ROOT"
+    fi
   fi
 
-  rm -f "$temp_file"
+  if [ -n "$snapshot_root" ] && [ -d "$snapshot_root" ]; then
+    sync_file_if_changed "$snapshot_root/.github/AI_CONSTITUTION.md" "$target_file" "$target_file"
+    return $?
+  fi
 
   if [ -s "$target_file" ]; then
-    print_warn "Could not update $target_file from remote; keeping local file"
+    print_warn "Could not check $target_file from remote; keeping local file"
     return 1
   fi
 
   if [ -s "$bundled_file" ]; then
-    cp "$bundled_file" "$target_file"
-    print_warn "Remote unavailable; restored $target_file from local template"
-    return 0
+    sync_file_if_changed "$bundled_file" "$target_file" "$target_file"
+    if [ $? -eq 0 ]; then
+      print_warn "Remote unavailable; restored $target_file from local template"
+      return 0
+    fi
+    return 2
   fi
 
-  print_warn "Could not update $target_file from remote and no local template found"
+  print_warn "Could not check $target_file from remote and no local template found"
   return 1
 }
 
 update_initialization() {
   local skills_repo
-  local raw_url
-  local temp_file
+  local snapshot_root="$1"
   local target_file=".github/AI_INITIALIZATION.md"
   local bundled_file="$SCRIPT_DIR/.github/AI_INITIALIZATION.md"
 
-  skills_repo=$(get_config_value "skillsRepo")
-  raw_url=$(github_raw_url "$skills_repo" ".github/AI_INITIALIZATION.md")
-  temp_file=$(mktemp)
-
-  if curl -sfL "$raw_url" > "$temp_file" 2>/dev/null && [ -s "$temp_file" ]; then
-    mv "$temp_file" "$target_file"
-    print_success "Updated $target_file"
-    return 0
+  if [ -z "$snapshot_root" ]; then
+    skills_repo=$(get_config_value "skillsRepo")
+    if ensure_repo_snapshot "$skills_repo"; then
+      snapshot_root="$REPO_SNAPSHOT_ROOT"
+    fi
   fi
 
-  rm -f "$temp_file"
+  if [ -n "$snapshot_root" ] && [ -d "$snapshot_root" ]; then
+    sync_file_if_changed "$snapshot_root/.github/AI_INITIALIZATION.md" "$target_file" "$target_file"
+    return $?
+  fi
 
   if [ -s "$target_file" ]; then
-    print_warn "Could not update $target_file from remote; keeping local file"
+    print_warn "Could not check $target_file from remote; keeping local file"
     return 1
   fi
 
   if [ -s "$bundled_file" ]; then
-    cp "$bundled_file" "$target_file"
-    print_warn "Remote unavailable; restored $target_file from local template"
-    return 0
+    sync_file_if_changed "$bundled_file" "$target_file" "$target_file"
+    if [ $? -eq 0 ]; then
+      print_warn "Remote unavailable; restored $target_file from local template"
+      return 0
+    fi
+    return 2
   fi
 
-  print_warn "Could not update $target_file from remote and no local template found"
+  print_warn "Could not check $target_file from remote and no local template found"
   return 1
 }
 
@@ -431,27 +571,40 @@ MARKER_EOF
 EOF
     cat "$temp_content" >> "AGENTS.md"
     print_success "Created AGENTS.md"
+    rm -f "$temp_content"
+    return 0
   else
     # Check if our markers exist
     if grep -q "<!-- EVOSKILLS_START -->" "AGENTS.md" && grep -q "<!-- EVOSKILLS_END -->" "AGENTS.md"; then
-      # Replace content between markers using sed
+      # Replace content between markers using a temp file and keep surrounding formatting
       local agents_tmp="AGENTS.md.tmp"
-      
-      # Extract content before EVOSKILLS_START
+
       sed -n '1,/<!-- EVOSKILLS_START -->/p' "AGENTS.md" | sed '$d' > "$agents_tmp"
-      
-      # Add our new content
       cat "$temp_content" >> "$agents_tmp"
-      
-      # Extract content after EVOSKILLS_END
       sed -n '/<!-- EVOSKILLS_END -->/,$p' "AGENTS.md" | tail -n +2 >> "$agents_tmp"
-      
+
+      if [ "$(fingerprint_path "AGENTS.md")" = "$(fingerprint_path "$agents_tmp")" ]; then
+        rm -f "$agents_tmp" "$temp_content"
+        print_info "Checked AGENTS.md: no changes, skipped"
+        return 2
+      fi
+
       mv "$agents_tmp" "AGENTS.md"
       print_success "Updated evoskills section in AGENTS.md"
     else
       # Append our section to existing file
-      echo "" >> "AGENTS.md"
-      cat "$temp_content" >> "AGENTS.md"
+      local agents_tmp="AGENTS.md.tmp"
+      cp "AGENTS.md" "$agents_tmp"
+      printf "\n" >> "$agents_tmp"
+      cat "$temp_content" >> "$agents_tmp"
+
+      if [ "$(fingerprint_path "AGENTS.md")" = "$(fingerprint_path "$agents_tmp")" ]; then
+        rm -f "$agents_tmp" "$temp_content"
+        print_info "Checked AGENTS.md: no changes, skipped"
+        return 2
+      fi
+
+      mv "$agents_tmp" "AGENTS.md"
       print_success "Appended evoskills section to AGENTS.md"
     fi
   fi
@@ -463,52 +616,32 @@ EOF
 install_skill_github() {
   local skill="$1"
   local skills_repo
+  local source_dir
+  local target_dir
   skills_repo=$(get_config_value "skillsRepo")
 
-  if [ -d "$SKILLS_DIR/$skill" ]; then
+  if ! ensure_repo_snapshot "$skills_repo"; then
+    print_error "Failed to download skill repository snapshot from $skills_repo"
+    return 1
+  fi
+
+  local snapshot_root="$REPO_SNAPSHOT_ROOT"
+
+  source_dir="$snapshot_root/.agent/skills/$skill"
+  target_dir="$SKILLS_DIR/$skill"
+
+  if [ ! -d "$source_dir" ]; then
+    print_error "Failed to find skill: $skill in $skills_repo"
+    return 1
+  fi
+
+  if [ -d "$target_dir" ]; then
     print_warn "Skill already installed: $skill"
     return 0
   fi
 
-  mkdir -p "$SKILLS_DIR/$skill"
-
-  # Try to download SKILL.md and references from GitHub
-  local raw_url
-  raw_url=$(github_raw_url "$skills_repo" ".agent/skills/$skill/SKILL.md")
-  if curl -sf "$raw_url" > "$SKILLS_DIR/$skill/SKILL.md" 2>/dev/null; then
-    print_success "Installed skill: $skill"
-
-    # Try to download references/ if present
-    local ref_url
-    ref_url=$(github_raw_url "$skills_repo" ".agent/skills/$skill/references/")
-    if curl -sf "$ref_url" &>/dev/null; then
-      print_info "Downloading skill references..."
-      mkdir -p "$SKILLS_DIR/$skill/references"
-      # Download common reference files
-      for ref_file in "*.md"; do
-        local ref_file_url
-        ref_file_url=$(github_raw_url "$skills_repo" ".agent/skills/$skill/references/$ref_file")
-        curl -sf "$ref_file_url" > "$SKILLS_DIR/$skill/references/$ref_file" 2>/dev/null || true
-      done
-    fi
-
-    # Try to download scripts/ if present
-    local script_url
-    script_url=$(github_raw_url "$skills_repo" ".agent/skills/$skill/scripts/")
-    if curl -sf "$script_url" &>/dev/null; then
-      print_info "Downloading skill scripts..."
-      mkdir -p "$SKILLS_DIR/$skill/scripts"
-      for script_file in "*.sh"; do
-        local script_file_url
-        script_file_url=$(github_raw_url "$skills_repo" ".agent/skills/$skill/scripts/$script_file")
-        curl -sf "$script_file_url" > "$SKILLS_DIR/$skill/scripts/$script_file" 2>/dev/null || true
-      done
-    fi
-  else
-    print_error "Failed to download skill: $skill from $skills_repo"
-    rm -rf "$SKILLS_DIR/$skill"
-    return 1
-  fi
+  sync_directory_if_changed "$source_dir" "$target_dir" "skill $skill"
+  return $?
 }
 
 cmd_init() {
@@ -682,6 +815,11 @@ cmd_remove() {
 cmd_update() {
   local skill=""
   local custom_repo=""
+  local skills_repo
+  local snapshot_root=""
+  local -a updated_files=()
+  local -a updated_skills=()
+  local update_result
 
   while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -704,9 +842,15 @@ cmd_update() {
     if command -v npm &> /dev/null; then
       local latest_version
       latest_version=$(npm view @xingyu.wang/evoskills version 2>/dev/null || true)
-      if [ -n "$latest_version" ] && [ "$latest_version" != "$CLI_VERSION" ]; then
-        print_warn "New evoskills CLI version available: $CLI_VERSION -> $latest_version"
-        print_info "Run: npm install -g @xingyu.wang/evoskills@latest"
+      if [ -n "$latest_version" ]; then
+        if [ "$latest_version" != "$CLI_VERSION" ]; then
+          print_warn "Checked evoskills CLI version: current=$CLI_VERSION, latest=$latest_version"
+          print_info "Run: npm install -g @xingyu.wang/evoskills@latest"
+        else
+          print_info "Checked evoskills CLI version: up to date ($CLI_VERSION)"
+        fi
+      else
+        print_warn "Checked evoskills CLI version: failed to fetch latest version"
       fi
     else
       print_warn "npm not found; skipping CLI version check"
@@ -714,34 +858,103 @@ cmd_update() {
   fi
 
   ensure_layout
-  update_constitution || true
-  update_initialization || true
+  skills_repo=$(get_config_value 'skillsRepo')
+  if ensure_repo_snapshot "$skills_repo"; then
+    snapshot_root="$REPO_SNAPSHOT_ROOT"
+  else
+    print_warn "Could not fetch repository snapshot from $skills_repo"
+  fi
+
+  set +e
+  update_constitution "$snapshot_root"
+  update_result=$?
+  set -e
+  case "$update_result" in
+    0) updated_files+=(".github/AI_CONSTITUTION.md") ;;
+  esac
+
+  set +e
+  update_initialization "$snapshot_root"
+  update_result=$?
+  set -e
+  case "$update_result" in
+    0) updated_files+=(".github/AI_INITIALIZATION.md") ;;
+  esac
+
+  local copilot_before copilot_after
+  copilot_before=$(fingerprint_path ".github/copilot-instructions.md")
   create_copilot_instructions_if_missing
+  copilot_after=$(fingerprint_path ".github/copilot-instructions.md")
+  if [ "$copilot_before" != "$copilot_after" ]; then
+    updated_files+=(".github/copilot-instructions.md")
+  fi
 
   if [ -n "$skill" ]; then
-    print_info "Refreshing skill: $skill"
-    rm -rf "$SKILLS_DIR/$skill"
-    install_skill_github "$skill"
+    if [ -z "$snapshot_root" ]; then
+      print_error "Cannot check skill updates without repository snapshot"
+      exit 1
+    fi
+    set +e
+    sync_directory_if_changed "$snapshot_root/.agent/skills/$skill" "$SKILLS_DIR/$skill" "skill $skill"
+    update_result=$?
+    set -e
+    case "$update_result" in
+      0) updated_skills+=("$skill") ;;
+      2) ;;
+      *) exit "$update_result" ;;
+    esac
   else
-    print_info "Refreshing all skills from $(get_config_value 'skillsRepo')..."
-    # Refresh all installed skills
+    if [ -z "$snapshot_root" ] && [ -d "$SKILLS_DIR" ] && [ "$(find "$SKILLS_DIR" -mindepth 1 -maxdepth 1 -type d | wc -l | tr -d ' ')" -gt 0 ]; then
+      print_error "Cannot check skill updates without repository snapshot"
+      exit 1
+    fi
+
+    print_info "Checking all installed skills from $skills_repo"
     if [ -d "$SKILLS_DIR" ]; then
       for installed_skill in "$SKILLS_DIR"/*; do
         if [ -d "$installed_skill" ]; then
           skill_name=$(basename "$installed_skill")
-          print_info "Updating $skill_name..."
-          rm -rf "$installed_skill"
-          install_skill_github "$skill_name"
+          set +e
+          sync_directory_if_changed "$snapshot_root/.agent/skills/$skill_name" "$installed_skill" "skill $skill_name"
+          update_result=$?
+          set -e
+          case "$update_result" in
+            0) updated_skills+=("$skill_name") ;;
+            2) ;;
+            *) exit "$update_result" ;;
+          esac
         fi
       done
     fi
   fi
 
-  # Only update AGENTS.md if not in evoskills project itself
-  # (in evoskills, AGENTS.md is user-maintained version-controlled file)
   if ! is_evoskills_repo; then
+    set +e
     write_agents_registry
+    update_result=$?
+    set -e
+    case "$update_result" in
+      0) updated_files+=("AGENTS.md") ;;
+    esac
   fi
+
+  print_info "Update summary:"
+  if [ ${#updated_files[@]} -gt 0 ]; then
+    for updated_file in "${updated_files[@]}"; do
+      print_info "  file updated: $updated_file"
+    done
+  else
+    print_info "  file updated: none"
+  fi
+
+  if [ ${#updated_skills[@]} -gt 0 ]; then
+    for updated_skill in "${updated_skills[@]}"; do
+      print_info "  skill updated: $updated_skill"
+    done
+  else
+    print_info "  skill updated: none"
+  fi
+
   print_success "Update complete"
 }
 
