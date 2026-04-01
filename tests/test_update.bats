@@ -32,7 +32,14 @@ teardown() {
   [[ "$output" != *"Updating evoskills CLI"* ]]
 }
 
-@test "update unconditionally refreshes constitution file" {
+@test "update reports CLI version check result" {
+  run bash -c "cd '$TEST_DIR' && '$EVOSKILLS_CMD' update 2>&1"
+  [ $status -eq 0 ]
+
+  [[ "$output" == *"Checked evoskills CLI version:"* ]]
+}
+
+@test "update refreshes modified constitution file" {
   # Modify the constitution file
   echo "MODIFIED" > "$TEST_DIR/.github/AI_CONSTITUTION.md"
   
@@ -44,15 +51,16 @@ teardown() {
   [ ! -f "$TEST_DIR/.github/AI_CONSTITUTION.md" ] || ! grep -q "^MODIFIED$" "$TEST_DIR/.github/AI_CONSTITUTION.md"
 }
 
-@test "update provides feedback on constitution update" {
+@test "update reports updated constitution when content changes" {
+  echo "MODIFIED" > "$TEST_DIR/.github/AI_CONSTITUTION.md"
+
   run bash -c "cd '$TEST_DIR' && '$EVOSKILLS_CMD' update 2>&1"
   [ $status -eq 0 ]
   
-  # Should mention updating the constitution
-  [[ "$output" == *"Updated"* ]] || [[ "$output" == *"Updating"* ]]
+  [[ "$output" == *"Checked .github/AI_CONSTITUTION.md: updated"* ]]
 }
 
-@test "update unconditionally refreshes initialization file" {
+@test "update refreshes modified initialization file" {
   # Modify the initialization file
   echo "MODIFIED" > "$TEST_DIR/.github/AI_INITIALIZATION.md"
   
@@ -90,6 +98,21 @@ teardown() {
   ! grep -q "^MODIFIED$" "$TEST_DIR/.agent/skills/_evolution-core/SKILL.md"
 }
 
+@test "update preserves skill references and scripts" {
+  bash -c "cd '$TEST_DIR' && '$EVOSKILLS_CMD' install _pr-creator" > /dev/null 2>&1
+
+  [ -f "$TEST_DIR/.agent/skills/_pr-creator/references/pull_request_template.md" ]
+  [ -f "$TEST_DIR/.agent/skills/_pr-creator/references/pull_request_template_zh.md" ]
+  [ -f "$TEST_DIR/.agent/skills/_pr-creator/scripts/create-pr.sh" ]
+
+  run bash -c "cd '$TEST_DIR' && '$EVOSKILLS_CMD' update 2>&1"
+  [ $status -eq 0 ]
+
+  [ -f "$TEST_DIR/.agent/skills/_pr-creator/references/pull_request_template.md" ]
+  [ -f "$TEST_DIR/.agent/skills/_pr-creator/references/pull_request_template_zh.md" ]
+  [ -f "$TEST_DIR/.agent/skills/_pr-creator/scripts/create-pr.sh" ]
+}
+
 @test "update with skill parameter updates only that skill" {
   # Install two skills
   bash -c "cd '$TEST_DIR' && '$EVOSKILLS_CMD' install _git-commit" > /dev/null 2>&1
@@ -123,10 +146,27 @@ teardown() {
   [[ "$output" == *"complete"* ]] || [[ "$output" == *"Complete"* ]]
 }
 
-@test "AGENTS.md is updated after update command" {
+@test "update reports checked status in one line and summary only updated items" {
+  run bash -c "cd '$TEST_DIR' && '$EVOSKILLS_CMD' update 2>&1"
+  [ $status -eq 0 ]
+
+  [[ "$output" == *"Update summary:"* ]]
+  [[ "$output" == *"Checked .github/AI_CONSTITUTION.md: no changes, skipped"* ]]
+  [[ "$output" == *"Checked skill _evolution-core: no changes, skipped"* ]]
+  [[ "$output" == *"Checked skill _skills-manager: no changes, skipped"* ]]
+  [[ "$output" == *"file updated: none"* ]]
+  [[ "$output" == *"skill updated: none"* ]]
+  [[ "$output" != *"file skipped:"* ]]
+  [[ "$output" != *"skill skipped:"* ]]
+}
+
+@test "AGENTS.md keeps markers and formatting after update command" {
   run bash -c "cd '$TEST_DIR' && '$EVOSKILLS_CMD' update 2>&1"
   [ $status -eq 0 ]
   
   [ -f "$TEST_DIR/AGENTS.md" ]
+  grep -q "^# AGENTS$" "$TEST_DIR/AGENTS.md"
   grep -q "_evolution-core" "$TEST_DIR/AGENTS.md"
+  [ "$(grep -c '<!-- EVOSKILLS_START -->' "$TEST_DIR/AGENTS.md")" -eq 1 ]
+  [ "$(grep -c '<!-- EVOSKILLS_END -->' "$TEST_DIR/AGENTS.md")" -eq 1 ]
 }
